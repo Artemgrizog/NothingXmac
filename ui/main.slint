@@ -1,0 +1,1780 @@
+// NothingX for Mac — UI in the Nothing design language: black, dot matrix, red accent.
+// Every user-visible string goes through @tr(); Russian lives in translations/ru.
+
+import "../assets/fonts/Inter-Variable.ttf";
+import "../assets/fonts/MatrixSansPrint-Regular.ttf";
+import "../assets/fonts/InstrumentSerif-Regular.ttf";
+
+export struct DeviceItem { name: string, address: string, connected: bool, img: image }
+export struct ModelItem { name: string, code: string, img: image, verified: bool, cmf: bool, kind: int }
+export struct Preset { name: string, id: int }
+export struct BattItem { label: string, pct: int, charging: bool }
+export struct GestureSlot { group: string, header: bool, label: string, action: string }
+export struct ActionItem { name: string, code: int, selected: bool }
+export struct EqBand { kind: int, gain: float, freq: float, q: float, x: float, y: float }
+export struct DualItem { name: string, connected: bool }
+export struct InfoRow { k: string, v: string }
+
+global Theme {
+    out property <color> bg: #000000;
+    out property <color> side: #0a0a0b;
+    out property <color> card: #1c1c1e;
+    out property <color> card2: #2c2c2e;
+    out property <color> well: #121214;
+    out property <color> fg: #ffffff;
+    out property <color> dim: #8e8e93;
+    out property <color> faint: #5a5a5f;
+    out property <color> red: #ee2127;
+    out property <color> green: #34c759;
+    out property <length> radius: 26px;
+    out property <string> dot: "Matrix Sans Print";
+    out property <string> serif: "Instrument Serif";
+}
+
+// ------------------------------------------------------------------ primitives
+
+component DotRing inherits Rectangle {
+    in property <int> n: 8;
+    in property <length> r: 13px;
+    in property <length> d: 3px;
+    in property <color> c: white;
+    in property <bool> center: true;
+    in property <bool> slash: false;
+    width: r * 2 + d;
+    height: r * 2 + d;
+    for i in n : Rectangle {
+        width: root.d;
+        height: root.d;
+        border-radius: root.d / 2;
+        background: root.c;
+        x: root.width / 2 - root.d / 2 + root.r * Math.cos(i * 360deg / root.n);
+        y: root.height / 2 - root.d / 2 + root.r * Math.sin(i * 360deg / root.n);
+    }
+    if center : Rectangle {
+        width: root.d * 1.8;
+        height: root.d * 1.8;
+        border-radius: self.width / 2;
+        background: root.c;
+    }
+    if slash : Path {
+        width: root.width;
+        height: root.height;
+        viewbox-width: 1;
+        viewbox-height: 1;
+        commands: "M 0.12 0.12 L 0.88 0.88";
+        stroke: root.c;
+        stroke-width: 2.4px;
+        stroke-line-cap: round;
+    }
+}
+
+// Mode icons: 0 noise cancelling, 1 transparency, 2 off, 3 head tracking, 4 fixed
+component ModeIcon inherits Rectangle {
+    in property <int> kind;
+    in property <color> c: white;
+    width: 40px;
+    height: 40px;
+    if root.kind == 0 : DotRing { n: 10; r: 14px; d: 3.2px; c: root.c; }
+    if root.kind == 1 : DotRing { n: 12; r: 16px; d: 2.6px; c: root.c; }
+    if root.kind == 1 : DotRing { n: 6; r: 8px; d: 2.6px; center: false; c: root.c; }
+    if root.kind == 2 : DotRing { n: 10; r: 14px; d: 3.2px; center: false; slash: true; c: root.c; }
+    if root.kind == 3 : DotRing { n: 8; r: 15px; d: 3px; c: root.c; }
+    if root.kind == 3 : DotRing { n: 4; r: 7px; d: 3px; center: false; c: root.c; }
+    if root.kind == 4 : DotRing { n: 8; r: 12px; d: 3.4px; c: root.c; }
+}
+
+component ModeBtn inherits Rectangle {
+    in property <bool> active;
+    in property <string> label;
+    in property <int> kind;
+    callback clicked;
+    min-width: 104px;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-checked: root.active;
+    accessible-action-default => { root.clicked(); }
+    VerticalLayout {
+        alignment: center;
+        spacing: 10px;
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 72px;
+                height: 72px;
+                border-radius: 36px;
+                background: root.active ? #f2f2f2 : (ta.has-hover ? #3a3a3c : Theme.card2);
+                animate background { duration: 160ms; }
+                ModeIcon { kind: root.kind; c: root.active ? #000 : #fff; }
+            }
+        }
+        Text {
+            text: root.label;
+            color: root.active ? Theme.fg : Theme.dim;
+            font-size: 13px;
+            font-weight: 600;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component Pill inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    in property <bool> accent;
+    in property <bool> enabled: true;
+    in property <length> pad: 18px;
+    in property <length> font-size: 14px;
+    callback clicked;
+    height: 38px;
+    horizontal-stretch: 0;
+    preferred-width: lbl.preferred-width + root.pad * 2;
+    min-width: lbl.preferred-width + root.pad * 2;
+    border-radius: self.height / 2;
+    background: root.accent ? (ta.has-hover && root.enabled ? #ff3b42 : Theme.red) : (root.active ? #f2f2f2 : (ta.has-hover && root.enabled ? #3a3a3c : Theme.card2));
+    opacity: root.enabled ? 1.0 : 0.55;
+    animate background { duration: 150ms; }
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-checked: root.active;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
+    lbl := Text {
+        text: root.text;
+        color: root.active && !root.accent ? #000000 : Theme.fg;
+        font-size: root.font-size;
+        font-weight: 600;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea {
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { if (root.enabled) { root.clicked(); } }
+    }
+}
+
+component Toggle inherits Rectangle {
+    in property <bool> on;
+    in property <string> label;
+    callback toggled(bool);
+    width: 52px;
+    height: 30px;
+    border-radius: 15px;
+    background: root.on ? Theme.green : #3a3a3c;
+    animate background { duration: 150ms; }
+    accessible-role: switch;
+    accessible-label: root.label;
+    accessible-checked: root.on;
+    accessible-action-default => { root.toggled(!root.on); }
+    Rectangle {
+        width: 26px;
+        height: 26px;
+        border-radius: 13px;
+        background: white;
+        y: 2px;
+        x: root.on ? 24px : 2px;
+        animate x { duration: 150ms; easing: ease-out; }
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.toggled(!root.on); }
+    }
+}
+
+component Card inherits Rectangle {
+    background: Theme.card;
+    border-radius: Theme.radius;
+}
+
+// Dot-matrix section caption, e.g. "NOISE CONTROL".
+component Caption inherits Text {
+    color: Theme.dim;
+    font-family: Theme.dot;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+component PageTitle inherits Text {
+    color: Theme.fg;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+// Settings-style row: title, optional subtitle, trailing toggle.
+component ToggleRow inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <bool> on;
+    callback toggled(bool);
+    min-height: 72px;
+    HorizontalLayout {
+        padding-left: 22px;
+        padding-right: 22px;
+        padding-top: 14px;
+        padding-bottom: 14px;
+        spacing: 16px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 3px;
+            Text { text: root.title; color: Theme.fg; font-size: 16px; font-weight: 600; wrap: word-wrap; }
+            if root.subtitle != "" : Text { text: root.subtitle; color: Theme.dim; font-size: 13px; wrap: word-wrap; }
+        }
+        VerticalLayout {
+            alignment: center;
+            Toggle { label: root.title; on: root.on; toggled(v) => { root.toggled(v); } }
+        }
+    }
+}
+
+component NavBtn inherits Rectangle {
+    in property <string> label;
+    in property <bool> active;
+    in property <int> icon;
+    callback clicked;
+    height: 72px;
+    border-radius: 20px;
+    background: root.active ? Theme.card : (ta.has-hover ? #141416 : transparent);
+    animate background { duration: 150ms; }
+    accessible-role: tab;
+    accessible-label: root.label;
+    accessible-checked: root.active;
+    accessible-action-default => { root.clicked(); }
+    VerticalLayout {
+        alignment: center;
+        spacing: 8px;
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 26px;
+                height: 26px;
+                if root.icon == 0 : DotRing { n: 9; r: 10px; d: 2.6px; c: root.active ? Theme.fg : Theme.dim; }
+                if root.icon == 1 : HorizontalLayout {
+                    spacing: 3px;
+                    alignment: center;
+                    for h in [8, 16, 11, 20, 13] : Rectangle {
+                        width: 3px;
+                        height: 26px;
+                        Rectangle { y: (parent.height - self.height) / 2; height: h * 1px; border-radius: 1.5px; background: root.active ? Theme.fg : Theme.dim; }
+                    }
+                }
+                if root.icon == 2 : DotRing { n: 4; r: 9px; d: 4px; center: true; c: root.active ? Theme.fg : Theme.dim; }
+                if root.icon == 3 : DotRing { n: 12; r: 10px; d: 2.2px; center: false; c: root.active ? Theme.fg : Theme.dim; }
+                if root.icon == 4 : Text { text: "+"; font-size: 24px; color: root.active ? Theme.fg : Theme.dim; }
+                if root.icon == 5 : Path {
+                    width: 24px;
+                    height: 24px;
+                    viewbox-width: 24;
+                    viewbox-height: 24;
+                    fill-rule: evenodd;
+                    fill: root.active ? Theme.fg : Theme.dim;
+                    commands: "M 19.49 10.71 L 22.14 10.88 L 22.14 13.12 L 19.49 13.29 L 19.02 14.91 L 18.21 16.39 L 19.96 18.38 L 18.38 19.96 L 16.39 18.21 L 14.91 19.02 L 13.29 19.49 L 13.12 22.14 L 10.88 22.14 L 10.71 19.49 L 9.09 19.02 L 7.61 18.21 L 5.62 19.96 L 4.04 18.38 L 5.79 16.39 L 4.98 14.91 L 4.51 13.29 L 1.86 13.12 L 1.86 10.88 L 4.51 10.71 L 4.98 9.09 L 5.79 7.61 L 4.04 5.62 L 5.62 4.04 L 7.61 5.79 L 9.09 4.98 L 10.71 4.51 L 10.88 1.86 L 13.12 1.86 L 13.29 4.51 L 14.91 4.98 L 16.39 5.79 L 18.38 4.04 L 19.96 5.62 L 18.21 7.61 L 19.02 9.09 Z M 15.30 12.00 A 3.3 3.3 0 1 0 8.70 12.00 A 3.3 3.3 0 1 0 15.30 12.00 Z";
+                }
+            }
+        }
+        Text {
+            text: root.label;
+            font-family: Theme.dot;
+            font-size: 9.5px;
+            color: root.active ? Theme.fg : Theme.dim;
+            horizontal-alignment: center;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component VSlider inherits Rectangle {
+    in-out property <float> value;
+    in property <float> minimum: -6;
+    in property <float> maximum: 6;
+    in property <string> label;
+    callback changed(float);
+    callback released(float);
+    width: 72px;
+    height: 200px;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: Math.round(root.value * 10) / 10;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-value-step: 0.5;
+    property <length> travel: root.height - 30px;
+    Rectangle { x: root.width / 2 - 2px; width: 4px; height: root.height; border-radius: 2px; background: #3a3a3c; }
+    Rectangle { x: root.width / 2 - 11px; y: root.height / 2 - 1px; width: 22px; height: 2px; background: #5a5a5e; }
+    Rectangle {
+        x: root.width / 2 - 2px;
+        width: 4px;
+        border-radius: 2px;
+        background: Theme.red;
+        y: root.value >= 0 ? knob.y + 15px : root.height / 2;
+        height: Math.abs(root.height / 2 - knob.y - 15px);
+    }
+    knob := Rectangle {
+        x: root.width / 2 - 15px;
+        y: (1 - (root.value - root.minimum) / (root.maximum - root.minimum)) * root.travel;
+        width: 30px;
+        height: 30px;
+        border-radius: 15px;
+        background: white;
+        drop-shadow-blur: 6px;
+        drop-shadow-color: #00000080;
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        moved => {
+            if (self.pressed) {
+                root.value = Math.clamp(root.maximum - (self.mouse-y - 15px) / root.travel * (root.maximum - root.minimum), root.minimum, root.maximum);
+                root.changed(root.value);
+            }
+        }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left) {
+                if (e.kind == PointerEventKind.down) {
+                    root.value = Math.clamp(root.maximum - (self.mouse-y - 15px) / root.travel * (root.maximum - root.minimum), root.minimum, root.maximum);
+                    root.changed(root.value);
+                } else if (e.kind == PointerEventKind.up) {
+                    root.released(root.value);
+                }
+            }
+        }
+    }
+}
+
+component HSlider inherits Rectangle {
+    in-out property <float> value;
+    in property <float> minimum: 0;
+    in property <float> maximum: 1;
+    in property <string> label;
+    in property <string> value-text;
+    callback changed(float);
+    callback released(float);
+    height: 56px;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.value-text;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    property <length> travel: root.width - 26px;
+    HorizontalLayout {
+        height: 20px;
+        Text { text: root.label; color: Theme.dim; font-size: 13px; }
+        Rectangle { }
+        Text { text: root.value-text; color: Theme.fg; font-size: 13px; font-family: Theme.dot; }
+    }
+    Rectangle { x: 13px; y: 38px; width: root.travel; height: 4px; border-radius: 2px; background: #3a3a3c; }
+    Rectangle { x: 13px; y: 38px; width: knob.x; height: 4px; border-radius: 2px; background: Theme.red; }
+    knob := Rectangle {
+        x: (root.value - root.minimum) / (root.maximum - root.minimum) * root.travel;
+        y: 27px;
+        width: 26px;
+        height: 26px;
+        border-radius: 13px;
+        background: white;
+    }
+    TouchArea {
+        y: 22px;
+        height: 34px;
+        mouse-cursor: pointer;
+        moved => {
+            if (self.pressed) {
+                root.value = Math.clamp(root.minimum + (self.mouse-x - 13px) / root.travel * (root.maximum - root.minimum), root.minimum, root.maximum);
+                root.changed(root.value);
+            }
+        }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left) {
+                if (e.kind == PointerEventKind.down) {
+                    root.value = Math.clamp(root.minimum + (self.mouse-x - 13px) / root.travel * (root.maximum - root.minimum), root.minimum, root.maximum);
+                    root.changed(root.value);
+                } else if (e.kind == PointerEventKind.up) {
+                    root.released(root.value);
+                }
+            }
+        }
+    }
+}
+
+// Battery readout: "75% L" in dot matrix with a bar under it.
+component BatteryView inherits VerticalLayout {
+    in property <BattItem> b;
+    in property <length> font-size: 22px;
+    in property <length> bar: 72px;
+    spacing: 8px;
+    HorizontalLayout {
+        alignment: center;
+        spacing: 6px;
+        Text { text: root.b.pct + "%" + (root.b.label != "" ? " " + root.b.label : ""); font-family: Theme.dot; font-size: root.font-size; color: Theme.fg; }
+        if root.b.charging : Text { text: "+"; font-family: Theme.dot; font-size: root.font-size; color: Theme.green; }
+    }
+    HorizontalLayout {
+        alignment: center;
+        Rectangle {
+            width: root.bar;
+            height: 6px;
+            border-radius: 3px;
+            background: #2c2c2e;
+            Rectangle {
+                x: 0px;
+                width: parent.width * Math.clamp(root.b.pct, 0, 100) / 100;
+                height: parent.height;
+                border-radius: 3px;
+                background: root.b.pct <= 15 ? Theme.red : (root.b.charging ? Theme.green : #9a9aa0);
+            }
+        }
+    }
+}
+
+// Response graph background: grid + labels.
+component EqGrid inherits Rectangle {
+    in property <float> range: 8;
+    background: Theme.well;
+    border-radius: 16px;
+    clip: true;
+    for db in [0.75, 0, -0.75] : Rectangle {
+        y: (0.5 - db / 2) * parent.height;
+        height: 1px;
+        background: db == 0 ? #3a3a3c : #232326;
+    }
+    for f in [0.233, 0.566, 0.9] : Rectangle { x: f * parent.width; width: 1px; background: #232326; }
+    for t[i] in ["100 Hz", "1 kHz", "10 kHz"] : Text {
+        x: (i == 0 ? 0.233 : (i == 1 ? 0.566 : 0.9)) * parent.width + 6px;
+        y: parent.height - 20px;
+        text: t;
+        color: Theme.faint;
+        font-size: 10px;
+        font-family: Theme.dot;
+    }
+    Text {
+        x: 8px;
+        y: (0.5 - 0.75 / 2) * parent.height - 14px;
+        text: "+" + Math.round(root.range * 0.75) + " dB";
+        color: Theme.faint;
+        font-size: 10px;
+        font-family: Theme.dot;
+    }
+    @children
+}
+
+// ================================================================== main window
+
+export component MainWindow inherits Window {
+    title: "NothingX";
+    background: Theme.bg;
+    default-font-family: "Inter";
+    min-width: 960px;
+    min-height: 660px;
+    preferred-width: 1100px;
+    preferred-height: 780px;
+
+    // ---- device state from Rust
+    in-out property <int> page: 0;
+    in property <[DeviceItem]> devices;
+    in property <int> selected: -1;
+    in property <bool> connected;
+    in property <bool> busy;
+    in property <bool> bt-denied;
+    in property <string> status;
+    in property <string> device-name;
+    in property <image> hero;
+    in property <[BattItem]> batteries;
+    in property <[InfoRow]> info;
+    in property <string> firmware;
+
+    in property <bool> has-anc;
+    in property <bool> has-transparency: true;
+    in property <[Preset]> nc-levels;
+    in property <int> spatial-kind;
+    in property <bool> has-bass;
+    in property <int> bass-max: 5;
+    in property <bool> has-latency;
+    in property <bool> has-custom-eq;
+    in property <bool> has-advanced-eq;
+    in property <bool> has-in-ear;
+    in property <bool> has-ring;
+    in property <bool> ring-buds;
+    in property <bool> has-fit;
+    in property <bool> has-dual;
+    in property <bool> has-panc;
+    in property <bool> has-gestures;
+
+    in property <int> anc-mode: -1;
+    in property <int> nc-level: 1;
+    in property <int> spatial;
+    in property <bool> bass-on;
+    in property <int> bass-level: 1;
+    in property <bool> latency-on;
+    in property <bool> in-ear-on;
+    in property <bool> dual-on;
+    in property <[DualItem]> dual-devices;
+    in property <bool> panc-on;
+    in property <string> fit-left;
+    in property <string> fit-right;
+    in property <bool> fit-running;
+    in property <int> ringing: -1;
+
+    // EQ
+    in property <[Preset]> presets-a;
+    in property <[Preset]> presets-b;
+    in property <int> eq-preset: -1;
+    in property <string> eq-name;
+    in property <int> eq-mode;
+    in-out property <float> eq-bass;
+    in-out property <float> eq-mid;
+    in-out property <float> eq-treble;
+    in property <string> eq-curve;
+    in property <[EqBand]> adv-bands;
+    in property <string> adv-curve;
+    in property <int> adv-selected;
+    in-out property <float> adv-fx;
+    in-out property <float> adv-gain;
+    in-out property <float> adv-q;
+    in property <int> adv-kind;
+    in property <string> adv-freq-text;
+    // width of the EQ graphs in px (= window width - sidebar - paddings), set by Rust
+    in property <float> graph-w: 600;
+
+    // controls
+    in property <[GestureSlot]> gesture-slots;
+    in property <[ActionItem]> gesture-actions;
+    in property <string> gesture-title;
+    in-out property <int> gesture-open: -1;
+
+    // guide + settings
+    in property <[ModelItem]> models-nothing;
+    in property <[ModelItem]> models-cmf;
+    in-out property <bool> menu-battery: true;
+    in property <bool> launch-at-login;
+    in property <string> language: "auto";
+    in property <string> version: "0.3.0";
+
+    in-out property <int> guide-tab: 0;
+    in-out property <int> guide-sel: -1;
+    property <ModelItem> guide-model: root.guide-tab == 0 ? root.models-nothing[root.guide-sel] : root.models-cmf[root.guide-sel];
+
+    // ---- actions
+    callback select-device(int);
+    callback reconnect();
+    callback set-anc(int);
+    callback set-spatial(int);
+    callback set-eq-preset(int);
+    callback set-eq-mode(int);
+    callback set-eq-custom(float, float, float);
+    callback preview-eq(float, float, float);
+    callback adv-drag(int, float, float);
+    callback adv-edit(int, float, float, float);
+    callback adv-set-kind(int, int);
+    callback adv-select(int);
+    callback adv-commit();
+    callback adv-add();
+    callback adv-remove(int);
+    callback adv-reset();
+    callback set-bass(bool, int);
+    callback set-latency(bool);
+    callback set-in-ear(bool);
+    callback set-dual(bool);
+    callback set-panc(bool);
+    callback ring(int);
+    callback fit-test();
+    callback open-gesture(int);
+    callback set-gesture(int, int);
+    callback open-bluetooth-settings();
+    callback set-menu-battery(bool);
+    callback set-launch-at-login(bool);
+    callback set-language(string);
+    callback open-log();
+
+    HorizontalLayout {
+        // ---------------------------------------------------------- sidebar
+        Rectangle {
+            width: 100px;
+            background: Theme.side;
+            VerticalLayout {
+                padding: 12px;
+                padding-top: 44px;
+                spacing: 4px;
+                NavBtn { label: @tr("DEVICES"); icon: 0; active: root.page == 0; clicked => { root.page = 0; } }
+                NavBtn { label: @tr("EQUALIZER"); icon: 1; active: root.page == 1; clicked => { root.page = 1; } }
+                NavBtn { label: @tr("CONTROLS"); icon: 2; active: root.page == 2; clicked => { root.page = 2; } }
+                NavBtn { label: @tr("DEVICE"); icon: 3; active: root.page == 3; clicked => { root.page = 3; } }
+                NavBtn { label: @tr("ADD"); icon: 4; active: root.page == 4; clicked => { root.page = 4; } }
+                Rectangle { }
+                NavBtn { label: @tr("SETTINGS"); icon: 5; active: root.page == 5; clicked => { root.page = 5; } }
+            }
+        }
+
+        // ---------------------------------------------------------- content
+        Rectangle {
+            // ===== DEVICES =====
+            if root.page == 0 : VerticalLayout {
+                padding-left: 32px;
+                padding-right: 32px;
+                padding-top: 36px;
+                spacing: 18px;
+                PageTitle { text: @tr("Devices"); }
+                HorizontalLayout {
+                    spacing: 12px;
+                    for d[i] in root.devices : Rectangle {
+                        width: 58px;
+                        height: 58px;
+                        border-radius: 29px;
+                        background: i == root.selected ? #f2f2f2 : #d4d4d8;
+                        border-width: i == root.selected ? 3px : 0px;
+                        border-color: Theme.red;
+                        accessible-role: button;
+                        accessible-label: d.name;
+                        accessible-checked: i == root.selected;
+                        accessible-action-default => { root.select-device(i); }
+                        Image { width: 46px; height: 46px; source: d.img; image-fit: contain; }
+                        Rectangle {
+                            x: parent.width - 15px;
+                            y: 1px;
+                            width: 14px;
+                            height: 14px;
+                            border-radius: 7px;
+                            background: d.connected ? Theme.green : #6e6e73;
+                            border-width: 2.5px;
+                            border-color: Theme.bg;
+                        }
+                        TouchArea { mouse-cursor: pointer; clicked => { root.select-device(i); } }
+                    }
+                    Rectangle {
+                        width: 58px;
+                        height: 58px;
+                        border-radius: 29px;
+                        background: Theme.card2;
+                        accessible-role: button;
+                        accessible-label: @tr("Add device");
+                        Text { text: "+"; color: Theme.fg; font-size: 28px; }
+                        TouchArea { mouse-cursor: pointer; clicked => { root.page = 4; } }
+                    }
+                    Rectangle { }
+                }
+
+                if root.bt-denied : Card {
+                    VerticalLayout {
+                        padding: 26px;
+                        spacing: 10px;
+                        Text { text: @tr("Bluetooth access is off"); color: Theme.fg; font-size: 20px; font-weight: 700; }
+                        Text { text: @tr("Allow NothingX in System Settings → Privacy & Security → Bluetooth, then reopen the app."); color: Theme.dim; font-size: 14px; wrap: word-wrap; }
+                    }
+                }
+                if root.devices.length == 0 && !root.bt-denied : Card {
+                    VerticalLayout {
+                        padding: 26px;
+                        spacing: 12px;
+                        alignment: start;
+                        Text { text: @tr("No Nothing or CMF device found"); color: Theme.fg; font-size: 20px; font-weight: 700; }
+                        Text { text: @tr("Pair your headphones in System Settings → Bluetooth. They show up here automatically."); color: Theme.dim; font-size: 14px; wrap: word-wrap; }
+                        HorizontalLayout {
+                            Pill { text: @tr("Open Bluetooth settings"); clicked => { root.open-bluetooth-settings(); } }
+                            Rectangle { }
+                        }
+                    }
+                }
+
+                if root.selected >= 0 : HorizontalLayout {
+                    spacing: 28px;
+                    vertical-stretch: 1;
+                    // ---- left: the device
+                    VerticalLayout {
+                        width: 330px;
+                        alignment: center;
+                        spacing: 12px;
+                        padding-bottom: 40px;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image {
+                                source: root.hero;
+                                width: 290px;
+                                height: 290px;
+                                image-fit: contain;
+                                opacity: root.connected ? 1.0 : 0.5;
+                                animate opacity { duration: 250ms; }
+                            }
+                        }
+                        Text {
+                            text: root.device-name;
+                            font-family: Theme.serif;
+                            font-size: 40px;
+                            color: Theme.fg;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                        }
+                        if root.connected && root.batteries.length > 0 : HorizontalLayout {
+                            alignment: center;
+                            spacing: 22px;
+                            padding-top: 4px;
+                            for b in root.batteries : BatteryView { b: b; font-size: root.batteries.length > 1 ? 17px : 24px; bar: root.batteries.length > 1 ? 58px : 120px; }
+                        }
+                        if !root.connected : HorizontalLayout {
+                            alignment: center;
+                            padding-top: 8px;
+                            Pill {
+                                height: 52px;
+                                pad: 36px;
+                                font-size: 16px;
+                                accent: true;
+                                enabled: !root.busy;
+                                text: root.status;
+                                clicked => { root.reconnect(); }
+                            }
+                        }
+                    }
+                    // ---- right: controls
+                    fl := Flickable {
+                        content-height: ctl.preferred-height + 36px;
+                        ctl := VerticalLayout {
+                            width: fl.width;
+                            alignment: start;
+                            spacing: 14px;
+                            padding-bottom: 28px;
+                            if !root.connected : Card {
+                                VerticalLayout {
+                                    padding: 26px;
+                                    spacing: 10px;
+                                    Text { text: root.busy ? @tr("Connecting to the headphones…") : @tr("Headphones are not connected"); color: Theme.fg; font-size: 20px; font-weight: 700; wrap: word-wrap; }
+                                    Text {
+                                        text: @tr("Turn the headphones on and connect them to this Mac. If they are connected but controls don't appear, close Nothing X on your phone — the headphones accept only one control app at a time.");
+                                        color: Theme.dim;
+                                        font-size: 14px;
+                                        wrap: word-wrap;
+                                    }
+                                }
+                            }
+                            if root.connected && root.has-anc : Card {
+                                VerticalLayout {
+                                    padding: 24px;
+                                    spacing: 16px;
+                                    VerticalLayout {
+                                        spacing: 4px;
+                                        Caption { text: @tr("NOISE CONTROL"); }
+                                        Text {
+                                            text: root.anc-mode == 1 ? @tr("Noise cancellation") : root.anc-mode == 2 ? @tr("Transparency") : root.anc-mode == 0 ? @tr("Off") : "—";
+                                            color: Theme.fg;
+                                            font-size: 20px;
+                                            font-weight: 700;
+                                        }
+                                    }
+                                    HorizontalLayout {
+                                        alignment: space-around;
+                                        ModeBtn { kind: 0; label: @tr("Noise cancellation"); active: root.anc-mode == 1; clicked => { root.set-anc(root.nc-level); } }
+                                        if root.has-transparency : ModeBtn { kind: 1; label: @tr("Transparency"); active: root.anc-mode == 2; clicked => { root.set-anc(7); } }
+                                        ModeBtn { kind: 2; label: @tr("Off"); active: root.anc-mode == 0; clicked => { root.set-anc(5); } }
+                                    }
+                                    if root.anc-mode == 1 && root.nc-levels.length > 1 : HorizontalLayout {
+                                        alignment: center;
+                                        spacing: 8px;
+                                        for l in root.nc-levels : Pill { text: l.name; active: root.nc-level == l.id; clicked => { root.set-anc(l.id); } }
+                                    }
+                                }
+                            }
+                            if root.connected && root.spatial-kind == 2 : Card {
+                                VerticalLayout {
+                                    padding: 24px;
+                                    spacing: 16px;
+                                    Caption { text: @tr("SPATIAL AUDIO"); }
+                                    HorizontalLayout {
+                                        alignment: space-around;
+                                        ModeBtn { kind: 3; label: @tr("Head tracking"); active: root.spatial == 2; clicked => { root.set-spatial(2); } }
+                                        ModeBtn { kind: 4; label: @tr("Fixed"); active: root.spatial == 1; clicked => { root.set-spatial(1); } }
+                                        ModeBtn { kind: 2; label: @tr("Off"); active: root.spatial == 0; clicked => { root.set-spatial(0); } }
+                                    }
+                                }
+                            }
+                            if root.connected && root.spatial-kind == 1 : Card {
+                                ToggleRow { title: @tr("Spatial audio"); on: root.spatial == 1; toggled(v) => { root.set-spatial(v ? 1 : 0); } }
+                            }
+                            if root.connected && (root.has-bass || root.has-latency) : HorizontalLayout {
+                                spacing: 14px;
+                                if root.has-bass : Card {
+                                    horizontal-stretch: 1;
+                                    preferred-width: 1px;
+                                    min-width: 0px;
+                                    height: 170px;
+                                    VerticalLayout {
+                                        padding: 22px;
+                                        spacing: 4px;
+                                        Caption { text: @tr("BASS"); }
+                                        Text { text: @tr("Bass enhance"); color: Theme.fg; font-size: 18px; font-weight: 700; wrap: word-wrap; }
+                                        Text { text: root.bass-on ? @tr("On · level {}", root.bass-level) : @tr("Off"); color: Theme.dim; font-size: 14px; }
+                                        Rectangle { }
+                                        HorizontalLayout {
+                                            spacing: 6px;
+                                            Toggle { label: @tr("Bass enhance"); on: root.bass-on; toggled(v) => { root.set-bass(v, root.bass-level); } }
+                                            Rectangle { }
+                                            if root.bass-on : HorizontalLayout {
+                                                spacing: 5px;
+                                                alignment: end;
+                                                for l in root.bass-max : Rectangle {
+                                                    width: 14px;
+                                                    height: 30px;
+                                                    accessible-role: button;
+                                                    accessible-label: @tr("Level {}", l + 1);
+                                                    accessible-action-default => { root.set-bass(true, l + 1); }
+                                                    Rectangle {
+                                                        x: 3px;
+                                                        width: 8px;
+                                                        height: 10px + l * 4px;
+                                                        y: parent.height - self.height;
+                                                        border-radius: 3px;
+                                                        background: l < root.bass-level ? Theme.red : #3a3a3c;
+                                                    }
+                                                    TouchArea { mouse-cursor: pointer; clicked => { root.set-bass(true, l + 1); } }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if root.has-latency : Card {
+                                    horizontal-stretch: 1;
+                                    preferred-width: 1px;
+                                    min-width: 0px;
+                                    height: 170px;
+                                    VerticalLayout {
+                                        padding: 22px;
+                                        spacing: 4px;
+                                        Caption { text: @tr("LATENCY"); }
+                                        Text { text: @tr("Low latency mode"); color: Theme.fg; font-size: 18px; font-weight: 700; wrap: word-wrap; }
+                                        Text { text: root.latency-on ? @tr("On") : @tr("Off"); color: Theme.dim; font-size: 14px; }
+                                        Rectangle { }
+                                        HorizontalLayout {
+                                            Toggle { label: @tr("Low latency mode"); on: root.latency-on; toggled(v) => { root.set-latency(v); } }
+                                            Rectangle { }
+                                        }
+                                    }
+                                }
+                            }
+                            if root.connected : HorizontalLayout {
+                                spacing: 14px;
+                                Card {
+                                    horizontal-stretch: 1;
+                                    preferred-width: 1px;
+                                    min-width: 0px;
+                                    height: 150px;
+                                    accessible-role: button;
+                                    accessible-label: @tr("Equalizer");
+                                    accessible-action-default => { root.page = 1; }
+                                    VerticalLayout {
+                                        padding: 22px;
+                                        spacing: 4px;
+                                        Caption { text: @tr("EQUALIZER"); }
+                                        Text { text: root.eq-name; color: Theme.fg; font-size: 18px; font-weight: 700; overflow: elide; }
+                                        Rectangle { }
+                                        HorizontalLayout {
+                                            spacing: 3px;
+                                            alignment: start;
+                                            for h in [10, 18, 13, 24, 16, 20, 9] : Rectangle {
+                                                width: 4px;
+                                                height: 26px;
+                                                Rectangle { y: parent.height - self.height; height: h * 1px; border-radius: 2px; background: Theme.fg; }
+                                            }
+                                        }
+                                    }
+                                    TouchArea { mouse-cursor: pointer; clicked => { root.page = 1; } }
+                                }
+                                if root.has-gestures : Card {
+                                    horizontal-stretch: 1;
+                                    preferred-width: 1px;
+                                    min-width: 0px;
+                                    height: 150px;
+                                    accessible-role: button;
+                                    accessible-label: @tr("Controls");
+                                    accessible-action-default => { root.page = 2; }
+                                    VerticalLayout {
+                                        padding: 22px;
+                                        spacing: 4px;
+                                        Caption { text: @tr("CONTROLS"); }
+                                        Text { text: @tr("Gestures and buttons"); color: Theme.fg; font-size: 18px; font-weight: 700; wrap: word-wrap; }
+                                        Rectangle { }
+                                        HorizontalLayout {
+                                            alignment: start;
+                                            DotRing { n: 4; r: 9px; d: 4px; c: Theme.fg; }
+                                        }
+                                    }
+                                    TouchArea { mouse-cursor: pointer; clicked => { root.page = 2; } }
+                                }
+                                Card {
+                                    horizontal-stretch: 1;
+                                    preferred-width: 1px;
+                                    min-width: 0px;
+                                    height: 150px;
+                                    accessible-role: button;
+                                    accessible-label: @tr("Device settings");
+                                    accessible-action-default => { root.page = 3; }
+                                    VerticalLayout {
+                                        padding: 22px;
+                                        spacing: 4px;
+                                        Caption { text: @tr("DEVICE"); }
+                                        Text { text: @tr("Device settings"); color: Theme.fg; font-size: 18px; font-weight: 700; wrap: word-wrap; }
+                                        Rectangle { }
+                                        Text { text: root.firmware != "" ? @tr("Firmware {}", root.firmware) : ""; color: Theme.dim; font-size: 12px; font-family: Theme.dot; }
+                                    }
+                                    TouchArea { mouse-cursor: pointer; clicked => { root.page = 3; } }
+                                }
+                            }
+                        }
+                    }
+                }
+                if root.selected < 0 : Rectangle { vertical-stretch: 1; }
+            }
+
+            // ===== EQUALIZER =====
+            if root.page == 1 : eqf := Flickable {
+                content-height: eqcol.preferred-height + 40px;
+                eqcol := VerticalLayout {
+                    width: eqf.width;
+                    alignment: start;
+                    padding: 32px;
+                    padding-top: 36px;
+                    spacing: 18px;
+                    VerticalLayout {
+                        spacing: 4px;
+                        PageTitle { text: @tr("Equalizer"); }
+                        if root.connected : Text { text: root.device-name + "  ·  " + root.eq-name; color: Theme.dim; font-size: 14px; }
+                    }
+                    if !root.connected : Card {
+                        VerticalLayout {
+                            padding: 26px;
+                            Text { text: @tr("Connect your headphones to adjust the equalizer."); color: Theme.dim; font-size: 15px; wrap: word-wrap; }
+                        }
+                    }
+                    if root.connected && root.has-advanced-eq : HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Pill { text: @tr("Simple"); active: root.eq-mode == 0; clicked => { root.set-eq-mode(0); } }
+                        Pill { text: @tr("Advanced"); active: root.eq-mode == 1; clicked => { root.set-eq-mode(1); } }
+                    }
+                    // ---- simple: presets + 3 bands
+                    if root.connected && root.eq-mode == 0 : Card {
+                        VerticalLayout {
+                            padding: 24px;
+                            spacing: 12px;
+                            Caption { text: @tr("PRESETS"); }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                for p in root.presets-a : Pill { text: p.name; active: root.eq-preset == p.id; clicked => { root.set-eq-preset(p.id); } }
+                            }
+                            if root.presets-b.length > 0 : HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                for p in root.presets-b : Pill { text: p.name; active: root.eq-preset == p.id; clicked => { root.set-eq-preset(p.id); } }
+                            }
+                        }
+                    }
+                    if root.connected && root.eq-mode == 0 && root.has-custom-eq : Card {
+                        VerticalLayout {
+                            padding: 24px;
+                            spacing: 16px;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                VerticalLayout {
+                                    spacing: 4px;
+                                    Caption { text: @tr("CUSTOM"); }
+                                    Text {
+                                        text: @tr("Move a slider to switch to your own sound. Changes apply when you release it.");
+                                        color: Theme.dim;
+                                        font-size: 13px;
+                                        wrap: word-wrap;
+                                    }
+                                }
+                                Rectangle { }
+                                Pill {
+                                    text: @tr("Reset");
+                                    clicked => {
+                                        root.eq-bass = 0;
+                                        root.eq-mid = 0;
+                                        root.eq-treble = 0;
+                                        root.preview-eq(0, 0, 0);
+                                        root.set-eq-custom(0, 0, 0);
+                                    }
+                                }
+                            }
+                            EqGrid {
+                                height: 170px;
+                                range: 8;
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: root.graph-w;
+                                    viewbox-height: 170;
+                                    commands: root.eq-curve;
+                                    stroke: Theme.red;
+                                    stroke-width: 3px;
+                                    stroke-line-cap: round;
+                                    stroke-line-join: round;
+                                }
+                            }
+                            HorizontalLayout {
+                                alignment: space-around;
+                                for b[idx] in [@tr("Bass"), @tr("Mids"), @tr("Treble")] : VerticalLayout {
+                                    spacing: 10px;
+                                    property <float> v: idx == 0 ? root.eq-bass : (idx == 1 ? root.eq-mid : root.eq-treble);
+                                    Text {
+                                        text: (v > 0.04 ? "+" : "") + (Math.round(v * 10) / 10) + " dB";
+                                        color: Theme.fg;
+                                        font-size: 15px;
+                                        font-family: Theme.dot;
+                                        horizontal-alignment: center;
+                                    }
+                                    HorizontalLayout {
+                                        alignment: center;
+                                        if idx == 0 : VSlider {
+                                            label: b;
+                                            value <=> root.eq-bass;
+                                            changed => { root.preview-eq(root.eq-bass, root.eq-mid, root.eq-treble); }
+                                            released => { root.set-eq-custom(root.eq-bass, root.eq-mid, root.eq-treble); }
+                                        }
+                                        if idx == 1 : VSlider {
+                                            label: b;
+                                            value <=> root.eq-mid;
+                                            changed => { root.preview-eq(root.eq-bass, root.eq-mid, root.eq-treble); }
+                                            released => { root.set-eq-custom(root.eq-bass, root.eq-mid, root.eq-treble); }
+                                        }
+                                        if idx == 2 : VSlider {
+                                            label: b;
+                                            value <=> root.eq-treble;
+                                            changed => { root.preview-eq(root.eq-bass, root.eq-mid, root.eq-treble); }
+                                            released => { root.set-eq-custom(root.eq-bass, root.eq-mid, root.eq-treble); }
+                                        }
+                                    }
+                                    Text { text: b; color: Theme.dim; font-size: 13px; horizontal-alignment: center; }
+                                }
+                            }
+                        }
+                    }
+                    // ---- advanced: up to 8 parametric bands
+                    if root.connected && root.eq-mode == 1 : Card {
+                        VerticalLayout {
+                            padding: 24px;
+                            spacing: 16px;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                VerticalLayout {
+                                    spacing: 4px;
+                                    Caption { text: @tr("ADVANCED EQ"); }
+                                    Text { text: @tr("Drag the points or pick a band below. Up to 8 bands."); color: Theme.dim; font-size: 13px; wrap: word-wrap; }
+                                }
+                                Rectangle { }
+                                Pill { text: @tr("Add band"); enabled: root.adv-bands.length < 8; clicked => { root.adv-add(); } }
+                                Pill { text: @tr("Reset"); clicked => { root.adv-reset(); } }
+                            }
+                            graph := EqGrid {
+                                height: 230px;
+                                range: 12;
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: root.graph-w;
+                                    viewbox-height: 230;
+                                    commands: root.adv-curve;
+                                    stroke: Theme.red;
+                                    stroke-width: 3px;
+                                    stroke-line-cap: round;
+                                    stroke-line-join: round;
+                                }
+                                for b[i] in root.adv-bands : Rectangle {
+                                    x: b.x * graph.width - 14px;
+                                    y: b.y * graph.height - 14px;
+                                    width: 28px;
+                                    height: 28px;
+                                    border-radius: 14px;
+                                    background: i == root.adv-selected ? Theme.red : #f2f2f2;
+                                    border-width: 2px;
+                                    border-color: #000000;
+                                    accessible-role: button;
+                                    accessible-label: @tr("Band {}", i + 1);
+                                    accessible-action-default => { root.adv-select(i); }
+                                    Text { text: i + 1; font-size: 12px; font-weight: 700; color: i == root.adv-selected ? #ffffff : #000000; }
+                                    TouchArea {
+                                        mouse-cursor: move;
+                                        pointer-event(e) => {
+                                            if (e.button == PointerEventButton.left) {
+                                                if (e.kind == PointerEventKind.down) {
+                                                    root.adv-select(i);
+                                                } else if (e.kind == PointerEventKind.up) {
+                                                    root.adv-commit();
+                                                }
+                                            }
+                                        }
+                                        moved => {
+                                            if (self.pressed) {
+                                                root.adv-drag(i, (self.mouse-x - self.pressed-x) / graph.width, (self.mouse-y - self.pressed-y) / graph.height);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                for b[i] in root.adv-bands : Pill {
+                                    pad: 14px;
+                                    text: i + 1;
+                                    active: i == root.adv-selected;
+                                    clicked => { root.adv-select(i); }
+                                }
+                            }
+                            if root.adv-selected >= 0 && root.adv-selected < root.adv-bands.length : VerticalLayout {
+                                spacing: 12px;
+                                HorizontalLayout {
+                                    spacing: 8px;
+                                    alignment: start;
+                                    Pill { text: @tr("Low shelf"); active: root.adv-kind == 0; clicked => { root.adv-set-kind(root.adv-selected, 0); } }
+                                    Pill { text: @tr("Peak"); active: root.adv-kind == 1; clicked => { root.adv-set-kind(root.adv-selected, 1); } }
+                                    Pill { text: @tr("High shelf"); active: root.adv-kind == 2; clicked => { root.adv-set-kind(root.adv-selected, 2); } }
+                                    Rectangle { }
+                                    Pill { text: @tr("Remove band"); enabled: root.adv-bands.length > 1; clicked => { root.adv-remove(root.adv-selected); } }
+                                }
+                                HSlider {
+                                    label: @tr("Frequency");
+                                    value-text: root.adv-freq-text;
+                                    value <=> root.adv-fx;
+                                    changed => { root.adv-edit(root.adv-selected, root.adv-fx, root.adv-gain, root.adv-q); }
+                                    released => { root.adv-commit(); }
+                                }
+                                HSlider {
+                                    label: @tr("Gain");
+                                    minimum: -12;
+                                    maximum: 12;
+                                    value-text: (root.adv-gain > 0.04 ? "+" : "") + (Math.round(root.adv-gain * 10) / 10) + " dB";
+                                    value <=> root.adv-gain;
+                                    changed => { root.adv-edit(root.adv-selected, root.adv-fx, root.adv-gain, root.adv-q); }
+                                    released => { root.adv-commit(); }
+                                }
+                                HSlider {
+                                    label: @tr("Width (Q)");
+                                    minimum: 0.3;
+                                    maximum: 6;
+                                    value-text: Math.round(root.adv-q * 100) / 100;
+                                    value <=> root.adv-q;
+                                    changed => { root.adv-edit(root.adv-selected, root.adv-fx, root.adv-gain, root.adv-q); }
+                                    released => { root.adv-commit(); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ===== CONTROLS =====
+            if root.page == 2 : cf := Flickable {
+                content-height: ccol.preferred-height + 40px;
+                ccol := VerticalLayout {
+                    width: cf.width;
+                    alignment: start;
+                    padding: 32px;
+                    padding-top: 36px;
+                    spacing: 10px;
+                    PageTitle { text: @tr("Controls"); }
+                    if !root.connected : Card {
+                        VerticalLayout {
+                            padding: 26px;
+                            Text { text: @tr("Connect your headphones to change the controls."); color: Theme.dim; font-size: 15px; wrap: word-wrap; }
+                        }
+                    }
+                    if root.connected && root.gesture-slots.length == 0 : Card {
+                        VerticalLayout {
+                            padding: 26px;
+                            Text { text: @tr("This device has no customizable controls."); color: Theme.dim; font-size: 15px; wrap: word-wrap; }
+                        }
+                    }
+                    if root.connected : VerticalLayout {
+                        spacing: 8px;
+                        for g[i] in root.gesture-slots : VerticalLayout {
+                            spacing: 8px;
+                            padding-top: g.header && i > 0 ? 14px : 0px;
+                            if g.header : Caption { text: g.group; }
+                            Rectangle {
+                                height: 64px;
+                                border-radius: 18px;
+                                background: gta.has-hover ? #242427 : Theme.card;
+                                accessible-role: button;
+                                accessible-label: g.label + ": " + g.action;
+                                accessible-action-default => { root.open-gesture(i); }
+                                HorizontalLayout {
+                                    padding-left: 22px;
+                                    padding-right: 22px;
+                                    spacing: 12px;
+                                    Text { text: g.label; color: Theme.fg; font-size: 16px; font-weight: 600; vertical-alignment: center; }
+                                    Rectangle { }
+                                    Text { text: g.action; color: Theme.dim; font-size: 15px; vertical-alignment: center; }
+                                    Text { text: "›"; color: Theme.faint; font-size: 22px; vertical-alignment: center; }
+                                }
+                                gta := TouchArea { mouse-cursor: pointer; clicked => { root.open-gesture(i); } }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ===== DEVICE SETTINGS =====
+            if root.page == 3 : df := Flickable {
+                content-height: dcol.preferred-height + 40px;
+                dcol := VerticalLayout {
+                    width: df.width;
+                    alignment: start;
+                    padding: 32px;
+                    padding-top: 36px;
+                    spacing: 12px;
+                    PageTitle { text: @tr("Device"); }
+                    if !root.connected : Card {
+                        VerticalLayout {
+                            padding: 26px;
+                            Text { text: @tr("Connect your headphones to see their settings."); color: Theme.dim; font-size: 15px; wrap: word-wrap; }
+                        }
+                    }
+                    if root.connected && (root.has-in-ear || root.has-panc) : Caption { text: @tr("WEARING"); }
+                    if root.connected && root.has-in-ear : Card {
+                        ToggleRow {
+                            title: @tr("In-ear detection");
+                            subtitle: @tr("Pause playback when you take the headphones off.");
+                            on: root.in-ear-on;
+                            toggled(v) => { root.set-in-ear(v); }
+                        }
+                    }
+                    if root.connected && root.has-panc : Card {
+                        ToggleRow {
+                            title: @tr("Personalised noise cancellation");
+                            subtitle: @tr("Tune noise cancellation to the shape of your ears.");
+                            on: root.panc-on;
+                            toggled(v) => { root.set-panc(v); }
+                        }
+                    }
+                    if root.connected && root.has-dual : Caption { text: @tr("CONNECTIONS"); }
+                    if root.connected && root.has-dual : Card {
+                        VerticalLayout {
+                            ToggleRow {
+                                title: @tr("Dual connection");
+                                subtitle: @tr("Stay connected to two devices at once.");
+                                on: root.dual-on;
+                                toggled(v) => { root.set-dual(v); }
+                            }
+                            for d in root.dual-devices : HorizontalLayout {
+                                padding-left: 22px;
+                                padding-right: 22px;
+                                height: 44px;
+                                spacing: 10px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    Rectangle { width: 8px; height: 8px; border-radius: 4px; background: d.connected ? Theme.green : #4a4a4e; }
+                                }
+                                Text { text: d.name; color: d.connected ? Theme.fg : Theme.dim; font-size: 14px; vertical-alignment: center; overflow: elide; }
+                                Rectangle { }
+                                Text { text: d.connected ? @tr("Connected") : ""; color: Theme.dim; font-size: 12px; vertical-alignment: center; }
+                            }
+                            if root.dual-devices.length > 0 : Rectangle { height: 10px; }
+                        }
+                    }
+                    if root.connected && (root.has-ring || root.has-fit) : Caption { text: @tr("TOOLS"); }
+                    if root.connected && root.has-ring : Card {
+                        VerticalLayout {
+                            padding: 22px;
+                            spacing: 10px;
+                            Text { text: @tr("Find my device"); color: Theme.fg; font-size: 16px; font-weight: 600; }
+                            Text { text: @tr("Plays a loud sound. Take the headphones off first."); color: Theme.dim; font-size: 13px; wrap: word-wrap; }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                if !root.ring-buds : Pill { text: root.ringing >= 0 ? @tr("Stop") : @tr("Play sound"); accent: root.ringing >= 0; clicked => { root.ring(root.ringing >= 0 ? -1 : 6); } }
+                                if root.ring-buds : Pill { text: root.ringing == 2 ? @tr("Stop left") : @tr("Left"); accent: root.ringing == 2; clicked => { root.ring(root.ringing == 2 ? -1 : 2); } }
+                                if root.ring-buds : Pill { text: root.ringing == 3 ? @tr("Stop right") : @tr("Right"); accent: root.ringing == 3; clicked => { root.ring(root.ringing == 3 ? -1 : 3); } }
+                            }
+                        }
+                    }
+                    if root.connected && root.has-fit : Card {
+                        VerticalLayout {
+                            padding: 22px;
+                            spacing: 10px;
+                            Text { text: @tr("Ear tip fit test"); color: Theme.fg; font-size: 16px; font-weight: 600; }
+                            Text { text: @tr("Put both earbuds in and start the test. It plays a short sound and checks the seal."); color: Theme.dim; font-size: 13px; wrap: word-wrap; }
+                            HorizontalLayout {
+                                spacing: 18px;
+                                alignment: start;
+                                Pill { text: root.fit-running ? @tr("Testing…") : @tr("Start test"); enabled: !root.fit-running; clicked => { root.fit-test(); } }
+                                if root.fit-left != "" : Text { text: @tr("Left: {}", root.fit-left); color: Theme.fg; font-size: 14px; vertical-alignment: center; }
+                                if root.fit-right != "" : Text { text: @tr("Right: {}", root.fit-right); color: Theme.fg; font-size: 14px; vertical-alignment: center; }
+                            }
+                        }
+                    }
+                    if root.connected : Caption { text: @tr("ABOUT"); }
+                    if root.connected : Card {
+                        VerticalLayout {
+                            padding: 22px;
+                            spacing: 10px;
+                            for row in root.info : HorizontalLayout {
+                                spacing: 10px;
+                                Text { text: row.k; color: Theme.dim; font-size: 14px; }
+                                Rectangle { }
+                                Text { text: row.v != "" ? row.v : "—"; color: Theme.fg; font-size: 14px; font-family: Theme.dot; }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ===== ADD DEVICE / CONNECTION GUIDE =====
+            if root.page == 4 : gf := Flickable {
+                property <[ModelItem]> list: root.guide-tab == 0 ? root.models-nothing : root.models-cmf;
+                property <int> cols: Math.max(1, Math.floor((gf.width - 64px + 14px) / 196px));
+                content-height: gcol.preferred-height + 40px;
+                gcol := VerticalLayout {
+                    width: gf.width;
+                    alignment: start;
+                    padding: 32px;
+                    padding-top: 36px;
+                    spacing: 18px;
+                    PageTitle { text: @tr("Connection guide"); }
+                    Card {
+                        VerticalLayout {
+                            padding: 24px;
+                            spacing: 8px;
+                            Text { text: @tr("How to add headphones"); color: Theme.fg; font-size: 18px; font-weight: 700; }
+                            Text {
+                                text: @tr("1. Put the headphones in pairing mode (pick your model below for the exact steps).\n2. Pair them in System Settings → Bluetooth.\n3. NothingX finds them automatically.");
+                                color: Theme.dim;
+                                font-size: 14px;
+                                wrap: word-wrap;
+                            }
+                            HorizontalLayout {
+                                padding-top: 6px;
+                                Pill { text: @tr("Open Bluetooth settings"); clicked => { root.open-bluetooth-settings(); } }
+                                Rectangle { }
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Pill { text: "Nothing"; active: root.guide-tab == 0; clicked => { root.guide-tab = 0; root.guide-sel = -1; } }
+                        Pill { text: "CMF"; active: root.guide-tab == 1; clicked => { root.guide-tab = 1; root.guide-sel = -1; } }
+                    }
+                    Rectangle {
+                        height: Math.ceil(gf.list.length / gf.cols) * 236px;
+                        for m[i] in gf.list : Rectangle {
+                            x: Math.mod(i, gf.cols) * 196px;
+                            y: Math.floor(i / gf.cols) * 236px;
+                            width: 182px;
+                            height: 222px;
+                            background: mta.has-hover ? #242427 : Theme.card;
+                            border-radius: 24px;
+                            accessible-role: button;
+                            accessible-label: m.name;
+                            accessible-action-default => { root.guide-sel = i; }
+                            VerticalLayout {
+                                padding: 14px;
+                                spacing: 6px;
+                                Image { source: m.img; height: 150px; image-fit: contain; }
+                                Text { text: m.name; color: Theme.fg; font-size: 15px; font-weight: 600; horizontal-alignment: center; overflow: elide; }
+                                Text { text: m.code + (m.verified ? @tr(" · tested") : ""); color: Theme.faint; font-size: 11px; font-family: Theme.dot; horizontal-alignment: center; }
+                            }
+                            mta := TouchArea { mouse-cursor: pointer; clicked => { root.guide-sel = i; } }
+                        }
+                    }
+                }
+            }
+            if root.page == 4 && root.guide-sel >= 0 : Rectangle {
+                background: #000000c0;
+                TouchArea { clicked => { root.guide-sel = -1; } }
+                Card {
+                    width: 520px;
+                    height: sheet.preferred-height;
+                    background: #18181a;
+                    border-width: 1px;
+                    border-color: #2c2c2e;
+                    TouchArea { }
+                    sheet := VerticalLayout {
+                        padding: 28px;
+                        spacing: 12px;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image { source: root.guide-model.img; width: 220px; height: 220px; image-fit: contain; }
+                        }
+                        Text { text: root.guide-model.name; color: Theme.fg; font-size: 30px; font-family: Theme.serif; horizontal-alignment: center; }
+                        Text {
+                            text: root.guide-model.kind == 0 ? @tr("1. Turn the headphones on.\n2. Press and hold the power / Bluetooth button until the LED starts flashing.\n3. Choose the headphones in System Settings → Bluetooth.")
+                                : root.guide-model.kind == 3 ? @tr("1. Turn the neckband on.\n2. Press and hold the power button until the LED starts flashing.\n3. Choose it in System Settings → Bluetooth.")
+                                : root.guide-model.kind == 4 ? @tr("1. Put both earbuds in the case and keep it open.\n2. Press and hold the button on the case until the LED flashes.\n3. Choose them in System Settings → Bluetooth.")
+                                : @tr("1. Put both earbuds in the case and open the lid.\n2. Press and hold the button on the case for about 2 seconds until the LED flashes.\n3. Choose them in System Settings → Bluetooth.");
+                            color: Theme.dim;
+                            font-size: 14px;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: root.guide-model.verified ? @tr("Tested with NothingX.") : @tr("Supported on a best-effort basis: controls use the shared Nothing protocol.");
+                            color: Theme.faint;
+                            font-size: 12px;
+                            wrap: word-wrap;
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            alignment: center;
+                            Pill { text: @tr("Open Bluetooth settings"); accent: true; clicked => { root.open-bluetooth-settings(); } }
+                            Pill { text: @tr("Close"); clicked => { root.guide-sel = -1; } }
+                        }
+                    }
+                }
+            }
+
+            // ===== APP SETTINGS =====
+            if root.page == 5 : sf := Flickable {
+                content-height: scol.preferred-height + 40px;
+                scol := VerticalLayout {
+                    width: sf.width;
+                    alignment: start;
+                    padding: 32px;
+                    padding-top: 36px;
+                    spacing: 12px;
+                    PageTitle { text: @tr("Settings"); }
+                    Caption { text: @tr("APP"); }
+                    Card {
+                        VerticalLayout {
+                            ToggleRow {
+                                title: @tr("Battery in the menu bar");
+                                subtitle: @tr("Show the charge next to the menu bar icon.");
+                                on: root.menu-battery;
+                                toggled(v) => { root.menu-battery = v; root.set-menu-battery(v); }
+                            }
+                            Rectangle { height: 1px; background: #2c2c2e; }
+                            ToggleRow {
+                                title: @tr("Open at login");
+                                subtitle: @tr("Start NothingX in the menu bar when you log in.");
+                                on: root.launch-at-login;
+                                toggled(v) => { root.set-launch-at-login(v); }
+                            }
+                            Rectangle { height: 1px; background: #2c2c2e; }
+                            HorizontalLayout {
+                                padding-left: 22px;
+                                padding-right: 22px;
+                                height: 72px;
+                                spacing: 8px;
+                                Text { text: @tr("Language"); color: Theme.fg; font-size: 16px; font-weight: 600; vertical-alignment: center; }
+                                Rectangle { }
+                                VerticalLayout {
+                                    alignment: center;
+                                    HorizontalLayout {
+                                        spacing: 6px;
+                                        Pill { height: 34px; pad: 14px; text: @tr("System"); active: root.language == "auto"; clicked => { root.set-language("auto"); } }
+                                        Pill { height: 34px; pad: 14px; text: "Русский"; active: root.language == "ru"; clicked => { root.set-language("ru"); } }
+                                        Pill { height: 34px; pad: 14px; text: "English"; active: root.language == "en"; clicked => { root.set-language("en"); } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Caption { text: @tr("ABOUT"); }
+                    Card {
+                        VerticalLayout {
+                            padding: 22px;
+                            spacing: 8px;
+                            Text { text: "NothingX for Mac " + root.version; color: Theme.fg; font-size: 22px; font-family: Theme.serif; }
+                            Text {
+                                text: @tr("Unofficial app, not affiliated with Nothing Technology Limited. Nothing and CMF are trademarks of their owner.");
+                                color: Theme.dim;
+                                font-size: 13px;
+                                wrap: word-wrap;
+                            }
+                            Text {
+                                text: @tr("Made with Slint. Fonts: Inter, Matrix Sans, Instrument Serif (SIL Open Font License).");
+                                color: Theme.faint;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                            }
+                            HorizontalLayout {
+                                padding-top: 4px;
+                                Pill { height: 34px; pad: 14px; text: @tr("Open log"); clicked => { root.open-log(); } }
+                                Rectangle { }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ===== gesture action picker (sheet) =====
+            if root.gesture-open >= 0 : Rectangle {
+                background: #000000c0;
+                TouchArea { clicked => { root.gesture-open = -1; } }
+                Card {
+                    width: 440px;
+                    height: Math.min(pick.preferred-height, root.height - 120px);
+                    background: #18181a;
+                    border-width: 1px;
+                    border-color: #2c2c2e;
+                    TouchArea { }
+                    pf := Flickable {
+                        content-height: pick.preferred-height;
+                        pick := VerticalLayout {
+                            width: pf.width;
+                            padding: 22px;
+                            spacing: 6px;
+                            Caption { text: root.gesture-title; }
+                            for a in root.gesture-actions : Rectangle {
+                                height: 48px;
+                                border-radius: 14px;
+                                background: a.selected ? #2c2c2e : (ata.has-hover ? #232326 : transparent);
+                                accessible-role: button;
+                                accessible-label: a.name;
+                                accessible-checked: a.selected;
+                                accessible-action-default => { root.set-gesture(root.gesture-open, a.code); }
+                                HorizontalLayout {
+                                    padding-left: 14px;
+                                    padding-right: 14px;
+                                    Text { text: a.name; color: Theme.fg; font-size: 15px; vertical-alignment: center; }
+                                    Rectangle { }
+                                    if a.selected : VerticalLayout {
+                                        alignment: center;
+                                        Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Theme.red; }
+                                    }
+                                }
+                                ata := TouchArea { mouse-cursor: pointer; clicked => { root.set-gesture(root.gesture-open, a.code); } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ================================================================== menu bar panel
+
+component PanelButton inherits Rectangle {
+    in property <string> text;
+    callback clicked;
+    height: 56px;
+    border-radius: 28px;
+    background: ta.has-hover ? #333336 : #242426;
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
+    Text { text: root.text; color: Theme.fg; font-size: 14px; font-weight: 600; letter-spacing: 0.4px; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+component IconButton inherits Rectangle {
+    in property <int> icon;
+    in property <string> label;
+    callback clicked;
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    background: ta.has-hover ? #242426 : transparent;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
+    if root.icon == 0 : Path {
+        width: 24px;
+        height: 24px;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        fill-rule: evenodd;
+        fill: Theme.fg;
+        commands: "M 19.49 10.71 L 22.14 10.88 L 22.14 13.12 L 19.49 13.29 L 19.02 14.91 L 18.21 16.39 L 19.96 18.38 L 18.38 19.96 L 16.39 18.21 L 14.91 19.02 L 13.29 19.49 L 13.12 22.14 L 10.88 22.14 L 10.71 19.49 L 9.09 19.02 L 7.61 18.21 L 5.62 19.96 L 4.04 18.38 L 5.79 16.39 L 4.98 14.91 L 4.51 13.29 L 1.86 13.12 L 1.86 10.88 L 4.51 10.71 L 4.98 9.09 L 5.79 7.61 L 4.04 5.62 L 5.62 4.04 L 7.61 5.79 L 9.09 4.98 L 10.71 4.51 L 10.88 1.86 L 13.12 1.86 L 13.29 4.51 L 14.91 4.98 L 16.39 5.79 L 18.38 4.04 L 19.96 5.62 L 18.21 7.61 L 19.02 9.09 Z M 15.30 12.00 A 3.3 3.3 0 1 0 8.70 12.00 A 3.3 3.3 0 1 0 15.30 12.00 Z";
+    }
+    if root.icon == 1 : DotRing { n: 10; r: 10px; d: 2.6px; center: true; c: Theme.fg; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Noise control switch with a sliding thumb.
+component Segmented inherits Rectangle {
+    in property <int> index: -1;
+    in property <bool> has-transparency: true;
+    callback picked(int);
+    height: 66px;
+    border-radius: 33px;
+    background: #242426;
+    property <int> n: root.has-transparency ? 3 : 2;
+    property <length> seg: (self.width - 8px) / root.n;
+    Rectangle {
+        visible: root.index >= 0;
+        x: 4px + Math.max(0, root.index) * root.seg;
+        y: 4px;
+        width: root.seg;
+        height: parent.height - 8px;
+        border-radius: self.height / 2;
+        background: #e6e6e8;
+        animate x { duration: 220ms; easing: ease-out; }
+    }
+    for i in root.n : Rectangle {
+        x: 4px + i * root.seg;
+        y: 4px;
+        width: root.seg;
+        height: parent.height - 8px;
+        property <int> kind: root.has-transparency ? i : (i == 0 ? 0 : 2);
+        accessible-role: button;
+        accessible-label: self.kind == 0 ? @tr("Noise cancellation") : self.kind == 1 ? @tr("Transparency") : @tr("Off");
+        accessible-checked: i == root.index;
+        accessible-action-default => { root.picked(i); }
+        ModeIcon { kind: parent.kind; c: i == root.index ? #000000 : #ffffff; }
+        TouchArea { mouse-cursor: pointer; clicked => { root.picked(i); } }
+    }
+}
+
+export component TrayPanel inherits Window {
+    title: "NothingX";
+    no-frame: true;
+    always-on-top: true;
+    background: transparent;
+    default-font-family: "Inter";
+    width: 392px;
+    height: panel.preferred-height;
+
+    in property <string> device-name;
+    in property <bool> connected;
+    in property <bool> busy;
+    in property <bool> has-device;
+    in property <string> status;
+    in property <bool> has-anc;
+    in property <bool> has-transparency: true;
+    in property <int> anc-mode: -1;
+    in property <int> nc-level: 1;
+    in property <[Preset]> nc-levels;
+    in property <[BattItem]> batteries;
+    in property <[DeviceItem]> devices;
+    in property <int> selected: -1;
+
+    callback set-anc(int);
+    callback open-page(int);
+    callback reconnect();
+    callback select-device(int);
+    callback quit();
+    callback dismiss();
+
+    forward-focus: keys;
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.text == Key.Escape) {
+                root.dismiss();
+                return accept;
+            }
+            reject
+        }
+    }
+
+    panel := Rectangle {
+        background: #0c0c0d;
+        border-radius: 28px;
+        border-width: 1px;
+        border-color: #2a2a2d;
+        HorizontalLayout {
+            padding: 18px;
+            padding-left: 10px;
+            spacing: 8px;
+            // vertical device name, read bottom-to-top like a dot-matrix strip
+            Rectangle {
+                width: 46px;
+                Text {
+                    width: parent.height;
+                    height: parent.width;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    transform-rotation: -90deg;
+                    text: root.device-name;
+                    font-family: Theme.dot;
+                    font-size: 26px;
+                    color: Theme.fg;
+                    horizontal-alignment: right;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+            VerticalLayout {
+                spacing: 16px;
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 8px;
+                    IconButton { icon: 0; label: @tr("Settings"); clicked => { root.open-page(5); } }
+                    IconButton { icon: 1; label: @tr("Open NothingX"); clicked => { root.open-page(0); } }
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    PanelButton { text: @tr("EQUALIZER"); clicked => { root.open-page(1); } }
+                    PanelButton { text: @tr("CONTROLS"); clicked => { root.open-page(2); } }
+                }
+                if root.connected && root.has-anc : VerticalLayout {
+                    spacing: 12px;
+                    padding-top: 4px;
+                    Text { text: @tr("NOISE CONTROL"); font-family: Theme.dot; font-size: 17px; color: Theme.fg; horizontal-alignment: center; }
+                    Segmented {
+                        has-transparency: root.has-transparency;
+                        index: root.anc-mode == 1 ? 0 : root.anc-mode == 2 ? 1 : root.anc-mode == 0 ? (root.has-transparency ? 2 : 1) : -1;
+                        picked(i) => {
+                            if (i == 0) {
+                                root.set-anc(root.nc-level);
+                            } else if (i == 1 && root.has-transparency) {
+                                root.set-anc(7);
+                            } else {
+                                root.set-anc(5);
+                            }
+                        }
+                    }
+                    if root.anc-mode == 1 && root.nc-levels.length > 1 : HorizontalLayout {
+                        alignment: center;
+                        spacing: 6px;
+                        for l in root.nc-levels : Pill {
+                            height: 30px;
+                            pad: 10px;
+                            font-size: 12px;
+                            text: l.name;
+                            active: root.nc-level == l.id;
+                            clicked => { root.set-anc(l.id); }
+                        }
+                    }
+                }
+                if root.connected && root.batteries.length > 0 : HorizontalLayout {
+                    alignment: space-around;
+                    padding-top: 6px;
+                    for b in root.batteries : BatteryView { b: b; font-size: 22px; bar: root.batteries.length > 1 ? 70px : 150px; }
+                }
+                if !root.connected : VerticalLayout {
+                    spacing: 12px;
+                    padding-top: 6px;
+                    Text {
+                        text: root.has-device ? (root.busy ? @tr("Connecting…") : @tr("Headphones are not connected")) : @tr("No Nothing or CMF device found");
+                        color: Theme.dim;
+                        font-size: 14px;
+                        horizontal-alignment: center;
+                        wrap: word-wrap;
+                    }
+                    if root.has-device : HorizontalLayout {
+                        alignment: center;
+                        Pill { accent: true; enabled: !root.busy; text: root.status; clicked => { root.reconnect(); } }
+                    }
+                }
+                if root.devices.length > 1 : HorizontalLayout {
+                    spacing: 8px;
+                    alignment: center;
+                    for d[i] in root.devices : Rectangle {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 20px;
+                        background: i == root.selected ? #f2f2f2 : #3a3a3c;
+                        accessible-role: button;
+                        accessible-label: d.name;
+                        accessible-checked: i == root.selected;
+                        accessible-action-default => { root.select-device(i); }
+                        Image { width: 32px; height: 32px; source: d.img; image-fit: contain; }
+                        TouchArea { mouse-cursor: pointer; clicked => { root.select-device(i); } }
+                    }
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    Text {
+                        text: @tr("Quit");
+                        color: qta.has-hover ? Theme.fg : Theme.faint;
+                        font-size: 12px;
+                        accessible-role: button;
+                        accessible-label: @tr("Quit NothingX");
+                        accessible-action-default => { root.quit(); }
+                        qta := TouchArea { mouse-cursor: pointer; clicked => { root.quit(); } }
+                    }
+                }
+            }
+        }
+    }
+}

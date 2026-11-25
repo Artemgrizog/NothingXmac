@@ -1,0 +1,5 @@
+/target
+/dist
+/.venv-dmg
+.DS_Store
+*.dmg

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>NothingX</string>
+  <key>CFBundleDisplayName</key><string>NothingX</string>
+  <key>CFBundleIdentifier</key><string>dev.nothingx.mac</string>
+  <key>CFBundleExecutable</key><string>NothingX</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>@VERSION@</string>
+  <key>CFBundleVersion</key><string>@VERSION@</string>
+  <key>CFBundleDevelopmentRegion</key><string>ru</string>
+  <key>CFBundleLocalizations</key><array><string>ru</string><string>en</string></array>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
+  <key>NSBluetoothAlwaysUsageDescription</key><string>NothingX подключается к наушникам Nothing / CMF по Bluetooth, чтобы менять режимы шумоподавления, эквалайзер и показывать заряд.</string>
+  <key>NSBluetoothPeripheralUsageDescription</key><string>NothingX подключается к наушникам Nothing / CMF по Bluetooth.</string>
+</dict></plist>

@@ -1,0 +1,340 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru\n"
+
+msgid "DEVICES"
+msgstr "УСТРОЙСТВА"
+
+msgid "EQUALIZER"
+msgstr "ЭКВАЛАЙЗЕР"
+
+msgid "CONTROLS"
+msgstr "УПРАВЛЕНИЕ"
+
+msgid "DEVICE"
+msgstr "УСТРОЙСТВО"
+
+msgid "ADD"
+msgstr "ДОБАВИТЬ"
+
+msgid "SETTINGS"
+msgstr "НАСТРОЙКИ"
+
+msgid "Devices"
+msgstr "Устройства"
+
+msgid "Add device"
+msgstr "Добавить устройство"
+
+msgid "Bluetooth access is off"
+msgstr "Нет доступа к Bluetooth"
+
+msgid "Allow NothingX in System Settings → Privacy & Security → Bluetooth, then reopen the app."
+msgstr "Разрешите NothingX в Системных настройках → Конфиденциальность и безопасность → Bluetooth и перезапустите приложение."
+
+msgid "No Nothing or CMF device found"
+msgstr "Устройства Nothing или CMF не найдены"
+
+msgid "Pair your headphones in System Settings → Bluetooth. They show up here automatically."
+msgstr "Подключите наушники в Системных настройках → Bluetooth — они появятся здесь автоматически."
+
+msgid "Open Bluetooth settings"
+msgstr "Открыть настройки Bluetooth"
+
+msgid "Connecting to the headphones…"
+msgstr "Подключаемся к наушникам…"
+
+msgid "Headphones are not connected"
+msgstr "Наушники не подключены"
+
+msgid "Turn the headphones on and connect them to this Mac. If they are connected but controls don't appear, close Nothing X on your phone — the headphones accept only one control app at a time."
+msgstr "Включите наушники и подключите их к этому Mac. Если они подключены, а управление не появляется, закройте Nothing X на телефоне — наушники принимают только одно приложение управления одновременно."
+
+msgid "NOISE CONTROL"
+msgstr "ШУМОПОДАВЛЕНИЕ"
+
+msgid "Noise cancellation"
+msgstr "Шумоподавление"
+
+msgid "Transparency"
+msgstr "Прозрачность"
+
+msgid "Off"
+msgstr "Выкл."
+
+msgid "SPATIAL AUDIO"
+msgstr "ПРОСТРАНСТВЕННЫЙ ЗВУК"
+
+msgid "Head tracking"
+msgstr "Отслеживание головы"
+
+msgid "Fixed"
+msgstr "Фиксированный"
+
+msgid "Spatial audio"
+msgstr "Пространственный звук"
+
+msgid "BASS"
+msgstr "БАС"
+
+msgid "Bass enhance"
+msgstr "Оптимизация баса"
+
+msgid "On · level {}"
+msgstr "Вкл. · уровень {}"
+
+msgid "Level {}"
+msgstr "Уровень {}"
+
+msgid "LATENCY"
+msgstr "ЗАДЕРЖКА"
+
+msgid "Low latency mode"
+msgstr "Режим малой задержки"
+
+msgid "On"
+msgstr "Вкл."
+
+msgid "Equalizer"
+msgstr "Эквалайзер"
+
+msgid "Controls"
+msgstr "Управление"
+
+msgid "Gestures and buttons"
+msgstr "Жесты и кнопки"
+
+msgid "Device settings"
+msgstr "Настройки устройства"
+
+msgid "Firmware {}"
+msgstr "Прошивка {}"
+
+msgid "Connect your headphones to adjust the equalizer."
+msgstr "Подключите наушники, чтобы настроить эквалайзер."
+
+msgid "Simple"
+msgstr "Простой"
+
+msgid "Advanced"
+msgstr "Продвинутый"
+
+msgid "PRESETS"
+msgstr "ПРЕСЕТЫ"
+
+msgid "CUSTOM"
+msgstr "СВОЙ ЗВУК"
+
+msgid "Move a slider to switch to your own sound. Changes apply when you release it."
+msgstr "Сдвиньте ползунок, чтобы включить свой звук. Изменения применяются, когда вы его отпускаете."
+
+msgid "Reset"
+msgstr "Сбросить"
+
+msgid "Bass"
+msgstr "Низкие"
+
+msgid "Mids"
+msgstr "Средние"
+
+msgid "Treble"
+msgstr "Высокие"
+
+msgid "ADVANCED EQ"
+msgstr "ПРОДВИНУТЫЙ ЭКВАЛАЙЗЕР"
+
+msgid "Drag the points or pick a band below. Up to 8 bands."
+msgstr "Перетаскивайте точки или выберите полосу ниже. До 8 полос."
+
+msgid "Add band"
+msgstr "Добавить полосу"
+
+msgid "Band {}"
+msgstr "Полоса {}"
+
+msgid "Low shelf"
+msgstr "НЧ-полка"
+
+msgid "Peak"
+msgstr "Пик"
+
+msgid "High shelf"
+msgstr "ВЧ-полка"
+
+msgid "Remove band"
+msgstr "Удалить полосу"
+
+msgid "Frequency"
+msgstr "Частота"
+
+msgid "Gain"
+msgstr "Усиление"
+
+msgid "Width (Q)"
+msgstr "Ширина (Q)"
+
+msgid "Connect your headphones to change the controls."
+msgstr "Подключите наушники, чтобы настроить управление."
+
+msgid "This device has no customizable controls."
+msgstr "У этого устройства нет настраиваемого управления."
+
+msgid "Device"
+msgstr "Устройство"
+
+msgid "Connect your headphones to see their settings."
+msgstr "Подключите наушники, чтобы увидеть их настройки."
+
+msgid "WEARING"
+msgstr "НОШЕНИЕ"
+
+msgid "In-ear detection"
+msgstr "Датчик ношения"
+
+msgid "Pause playback when you take the headphones off."
+msgstr "Пауза, когда вы снимаете наушники."
+
+msgid "Personalised noise cancellation"
+msgstr "Персональное шумоподавление"
+
+msgid "Tune noise cancellation to the shape of your ears."
+msgstr "Подстройка шумоподавления под форму ушей."
+
+msgid "CONNECTIONS"
+msgstr "ПОДКЛЮЧЕНИЯ"
+
+msgid "Dual connection"
+msgstr "Двойное подключение"
+
+msgid "Stay connected to two devices at once."
+msgstr "Подключение к двум устройствам одновременно."
+
+msgid "Connected"
+msgstr "Подключено"
+
+msgid "TOOLS"
+msgstr "ИНСТРУМЕНТЫ"
+
+msgid "Find my device"
+msgstr "Найти устройство"
+
+msgid "Plays a loud sound. Take the headphones off first."
+msgstr "Играет громкий звук. Сначала снимите наушники."
+
+msgid "Stop"
+msgstr "Остановить"
+
+msgid "Play sound"
+msgstr "Воспроизвести звук"
+
+msgid "Stop left"
+msgstr "Остановить левый"
+
+msgid "Left"
+msgstr "Левый"
+
+msgid "Stop right"
+msgstr "Остановить правый"
+
+msgid "Right"
+msgstr "Правый"
+
+msgid "Ear tip fit test"
+msgstr "Тест посадки амбушюр"
+
+msgid "Put both earbuds in and start the test. It plays a short sound and checks the seal."
+msgstr "Вставьте оба наушника и начните тест: прозвучит короткий сигнал и будет проверена изоляция."
+
+msgid "Testing…"
+msgstr "Проверка…"
+
+msgid "Start test"
+msgstr "Начать тест"
+
+msgid "Left: {}"
+msgstr "Левый: {}"
+
+msgid "Right: {}"
+msgstr "Правый: {}"
+
+msgid "ABOUT"
+msgstr "О ПРИЛОЖЕНИИ"
+
+msgid "Connection guide"
+msgstr "Руководство по подключению"
+
+msgid "How to add headphones"
+msgstr "Как добавить наушники"
+
+msgid "1. Put the headphones in pairing mode (pick your model below for the exact steps).\n2. Pair them in System Settings → Bluetooth.\n3. NothingX finds them automatically."
+msgstr "1. Переведите наушники в режим сопряжения (точные шаги — в карточке вашей модели ниже).\n2. Подключите их в Системных настройках → Bluetooth.\n3. NothingX найдёт их автоматически."
+
+msgid " · tested"
+msgstr " · проверено"
+
+msgid "1. Turn the headphones on.\n2. Press and hold the power / Bluetooth button until the LED starts flashing.\n3. Choose the headphones in System Settings → Bluetooth."
+msgstr "1. Включите наушники.\n2. Нажмите и удерживайте кнопку питания / Bluetooth, пока индикатор не начнёт мигать.\n3. Выберите наушники в Системных настройках → Bluetooth."
+
+msgid "1. Turn the neckband on.\n2. Press and hold the power button until the LED starts flashing.\n3. Choose it in System Settings → Bluetooth."
+msgstr "1. Включите наушники.\n2. Удерживайте кнопку питания, пока индикатор не начнёт мигать.\n3. Выберите их в Системных настройках → Bluetooth."
+
+msgid "1. Put both earbuds in the case and keep it open.\n2. Press and hold the button on the case until the LED flashes.\n3. Choose them in System Settings → Bluetooth."
+msgstr "1. Положите оба наушника в кейс и не закрывайте его.\n2. Удерживайте кнопку на кейсе, пока индикатор не замигает.\n3. Выберите их в Системных настройках → Bluetooth."
+
+msgid "1. Put both earbuds in the case and open the lid.\n2. Press and hold the button on the case for about 2 seconds until the LED flashes.\n3. Choose them in System Settings → Bluetooth."
+msgstr "1. Положите оба наушника в кейс и откройте крышку.\n2. Удерживайте кнопку на кейсе около 2 секунд, пока индикатор не замигает.\n3. Выберите их в Системных настройках → Bluetooth."
+
+msgid "Tested with NothingX."
+msgstr "Проверено с NothingX."
+
+msgid "Supported on a best-effort basis: controls use the shared Nothing protocol."
+msgstr "Поддержка экспериментальная: управление идёт по общему протоколу Nothing."
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "APP"
+msgstr "ПРИЛОЖЕНИЕ"
+
+msgid "Battery in the menu bar"
+msgstr "Заряд в строке меню"
+
+msgid "Show the charge next to the menu bar icon."
+msgstr "Показывать заряд рядом с иконкой в строке меню."
+
+msgid "Open at login"
+msgstr "Открывать при входе"
+
+msgid "Start NothingX in the menu bar when you log in."
+msgstr "Запускать NothingX в строке меню при входе в систему."
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "System"
+msgstr "Системный"
+
+msgid "Unofficial app, not affiliated with Nothing Technology Limited. Nothing and CMF are trademarks of their owner."
+msgstr "Неофициальное приложение, не связано с Nothing Technology Limited. Nothing и CMF — товарные знаки их владельца."
+
+msgid "Made with Slint. Fonts: Inter, Matrix Sans, Instrument Serif (SIL Open Font License)."
+msgstr "Сделано на Slint. Шрифты: Inter, Matrix Sans, Instrument Serif (SIL Open Font License)."
+
+msgid "Open log"
+msgstr "Открыть журнал"
+
+msgid "Open NothingX"
+msgstr "Открыть NothingX"
+
+msgid "Connecting…"
+msgstr "Подключение…"
+
+msgid "Quit"
+msgstr "Выйти"
+
+msgid "Quit NothingX"
+msgstr "Выйти из NothingX"
