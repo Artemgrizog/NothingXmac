@@ -25,6 +25,7 @@ iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 rm -rf "$ICONSET" "$OUT/icon1024.png"
 
 sed "s/@VERSION@/$VER/g" packaging/Info.plist > "$APP/Contents/Info.plist"
+cp -R packaging/en.lproj packaging/ru.lproj "$APP/Contents/Resources/"
 
 codesign --force --deep --sign - "$APP"
 

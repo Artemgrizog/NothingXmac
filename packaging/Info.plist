@@ -9,12 +9,13 @@
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>@VERSION@</string>
   <key>CFBundleVersion</key><string>@VERSION@</string>
-  <key>CFBundleDevelopmentRegion</key><string>ru</string>
-  <key>CFBundleLocalizations</key><array><string>ru</string><string>en</string></array>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
+  <key>NSHumanReadableCopyright</key><string>Unofficial app, not affiliated with Nothing Technology Limited. MIT License.</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
-  <key>NSBluetoothAlwaysUsageDescription</key><string>NothingX подключается к наушникам Nothing / CMF по Bluetooth, чтобы менять режимы шумоподавления, эквалайзер и показывать заряд.</string>
-  <key>NSBluetoothPeripheralUsageDescription</key><string>NothingX подключается к наушникам Nothing / CMF по Bluetooth.</string>
+  <key>NSBluetoothAlwaysUsageDescription</key><string>NothingX connects to your Nothing / CMF headphones over Bluetooth to change noise control and the equalizer and to show the battery level.</string>
+  <key>NSBluetoothPeripheralUsageDescription</key><string>NothingX connects to your Nothing / CMF headphones over Bluetooth.</string>
 </dict></plist>

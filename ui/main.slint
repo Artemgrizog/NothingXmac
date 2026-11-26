@@ -3,10 +3,13 @@
 
 import "../assets/fonts/Inter-Variable.ttf";
 import "../assets/fonts/MatrixSansPrint-Regular.ttf";
+import "../assets/fonts/MatrixSansRaster-Regular.ttf";
 import "../assets/fonts/InstrumentSerif-Regular.ttf";
 
 export struct DeviceItem { name: string, address: string, connected: bool, img: image }
-export struct ModelItem { name: string, code: string, img: image, verified: bool, cmf: bool, kind: int }
+// pair: how to enter pairing mode. 0 headphones (Bluetooth button), 1 earbuds (case button),
+// 2 earbuds (touch and hold both), 3 neckband (power button)
+export struct ModelItem { name: string, img: image, cmf: bool, pair: int }
 export struct Preset { name: string, id: int }
 export struct BattItem { label: string, pct: int, charging: bool }
 export struct GestureSlot { group: string, header: bool, label: string, action: string }
@@ -28,6 +31,8 @@ global Theme {
     out property <color> green: #34c759;
     out property <length> radius: 26px;
     out property <string> dot: "Matrix Sans Print";
+    // bigger round dots, used for the vertical device name in the menu bar panel
+    out property <string> dot-bold: "Matrix Sans Raster";
     out property <string> serif: "Instrument Serif";
 }
 
@@ -187,6 +192,30 @@ component Toggle inherits Rectangle {
 component Card inherits Rectangle {
     background: Theme.card;
     border-radius: Theme.radius;
+}
+
+// Round "×" button for sheets.
+component CloseButton inherits Rectangle {
+    callback clicked;
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    background: ta.has-hover ? #3a3a3c : #2c2c2e;
+    animate background { duration: 120ms; }
+    accessible-role: button;
+    accessible-label: @tr("Close");
+    accessible-action-default => { root.clicked(); }
+    Path {
+        width: 11px;
+        height: 11px;
+        viewbox-width: 11;
+        viewbox-height: 11;
+        commands: "M 1 1 L 10 10 M 10 1 L 1 10";
+        stroke: Theme.fg;
+        stroke-width: 1.8px;
+        stroke-line-cap: round;
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
 // Dot-matrix section caption, e.g. "NOISE CONTROL".
@@ -478,7 +507,9 @@ export component MainWindow inherits Window {
     in property <bool> connected;
     in property <bool> busy;
     in property <bool> bt-denied;
+    // label of the connect button ("Connect" / "Connecting…") and the last connection error
     in property <string> status;
+    in property <string> error;
     in property <string> device-name;
     in property <image> hero;
     in property <[BattItem]> batteries;
@@ -550,7 +581,7 @@ export component MainWindow inherits Window {
     in-out property <bool> menu-battery: true;
     in property <bool> launch-at-login;
     in property <string> language: "auto";
-    in property <string> version: "0.3.0";
+    in property <string> version: "0.4.0";
 
     in-out property <int> guide-tab: 0;
     in-out property <int> guide-sel: -1;
@@ -581,12 +612,32 @@ export component MainWindow inherits Window {
     callback ring(int);
     callback fit-test();
     callback open-gesture(int);
+    callback close-gesture();
     callback set-gesture(int, int);
     callback open-bluetooth-settings();
     callback set-menu-battery(bool);
     callback set-launch-at-login(bool);
     callback set-language(string);
     callback open-log();
+
+    // Esc closes the open sheet
+    forward-focus: keys;
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.text == Key.Escape) {
+                if (root.gesture-open >= 0) {
+                    root.gesture-open = -1;
+                    root.close-gesture();
+                    return accept;
+                }
+                if (root.guide-sel >= 0) {
+                    root.guide-sel = -1;
+                    return accept;
+                }
+            }
+            reject
+        }
+    }
 
     HorizontalLayout {
         // ---------------------------------------------------------- sidebar
@@ -737,7 +788,13 @@ export component MainWindow inherits Window {
                                 VerticalLayout {
                                     padding: 26px;
                                     spacing: 10px;
-                                    Text { text: root.busy ? @tr("Connecting to the headphones…") : @tr("Headphones are not connected"); color: Theme.fg; font-size: 20px; font-weight: 700; wrap: word-wrap; }
+                                    Text {
+                                        text: root.busy ? @tr("Connecting to the headphones…") : root.error != "" ? root.error : @tr("Headphones are not connected");
+                                        color: Theme.fg;
+                                        font-size: 20px;
+                                        font-weight: 700;
+                                        wrap: word-wrap;
+                                    }
                                     Text {
                                         text: @tr("Turn the headphones on and connect them to this Mac. If they are connected but controls don't appear, close Nothing X on your phone — the headphones accept only one control app at a time.");
                                         color: Theme.dim;
@@ -1229,7 +1286,7 @@ export component MainWindow inherits Window {
                             Text { text: @tr("Connect your headphones to see their settings."); color: Theme.dim; font-size: 15px; wrap: word-wrap; }
                         }
                     }
-                    if root.connected && (root.has-in-ear || root.has-panc) : Caption { text: @tr("WEARING"); }
+                    if root.connected && (root.has-in-ear || root.has-panc) : Caption { text: @tr("FEATURES"); }
                     if root.connected && root.has-in-ear : Card {
                         ToggleRow {
                             title: @tr("In-ear detection");
@@ -1302,7 +1359,7 @@ export component MainWindow inherits Window {
                             }
                         }
                     }
-                    if root.connected : Caption { text: @tr("ABOUT"); }
+                    if root.connected : Caption { text: @tr("ABOUT DEVICE"); }
                     if root.connected : Card {
                         VerticalLayout {
                             padding: 22px;
@@ -1312,6 +1369,13 @@ export component MainWindow inherits Window {
                                 Text { text: row.k; color: Theme.dim; font-size: 14px; }
                                 Rectangle { }
                                 Text { text: row.v != "" ? row.v : "—"; color: Theme.fg; font-size: 14px; font-family: Theme.dot; }
+                            }
+                            Rectangle { height: 1px; background: #2c2c2e; }
+                            Text {
+                                text: @tr("Firmware updates are installed with the Nothing X app on your phone.");
+                                color: Theme.faint;
+                                font-size: 12px;
+                                wrap: word-wrap;
                             }
                         }
                     }
@@ -1355,12 +1419,12 @@ export component MainWindow inherits Window {
                         Pill { text: "CMF"; active: root.guide-tab == 1; clicked => { root.guide-tab = 1; root.guide-sel = -1; } }
                     }
                     Rectangle {
-                        height: Math.ceil(gf.list.length / gf.cols) * 236px;
+                        height: Math.ceil(gf.list.length / gf.cols) * 222px;
                         for m[i] in gf.list : Rectangle {
                             x: Math.mod(i, gf.cols) * 196px;
-                            y: Math.floor(i / gf.cols) * 236px;
+                            y: Math.floor(i / gf.cols) * 222px;
                             width: 182px;
-                            height: 222px;
+                            height: 208px;
                             background: mta.has-hover ? #242427 : Theme.card;
                             border-radius: 24px;
                             accessible-role: button;
@@ -1368,54 +1432,12 @@ export component MainWindow inherits Window {
                             accessible-action-default => { root.guide-sel = i; }
                             VerticalLayout {
                                 padding: 14px;
-                                spacing: 6px;
+                                padding-bottom: 18px;
+                                spacing: 8px;
                                 Image { source: m.img; height: 150px; image-fit: contain; }
                                 Text { text: m.name; color: Theme.fg; font-size: 15px; font-weight: 600; horizontal-alignment: center; overflow: elide; }
-                                Text { text: m.code + (m.verified ? @tr(" · tested") : ""); color: Theme.faint; font-size: 11px; font-family: Theme.dot; horizontal-alignment: center; }
                             }
                             mta := TouchArea { mouse-cursor: pointer; clicked => { root.guide-sel = i; } }
-                        }
-                    }
-                }
-            }
-            if root.page == 4 && root.guide-sel >= 0 : Rectangle {
-                background: #000000c0;
-                TouchArea { clicked => { root.guide-sel = -1; } }
-                Card {
-                    width: 520px;
-                    height: sheet.preferred-height;
-                    background: #18181a;
-                    border-width: 1px;
-                    border-color: #2c2c2e;
-                    TouchArea { }
-                    sheet := VerticalLayout {
-                        padding: 28px;
-                        spacing: 12px;
-                        HorizontalLayout {
-                            alignment: center;
-                            Image { source: root.guide-model.img; width: 220px; height: 220px; image-fit: contain; }
-                        }
-                        Text { text: root.guide-model.name; color: Theme.fg; font-size: 30px; font-family: Theme.serif; horizontal-alignment: center; }
-                        Text {
-                            text: root.guide-model.kind == 0 ? @tr("1. Turn the headphones on.\n2. Press and hold the power / Bluetooth button until the LED starts flashing.\n3. Choose the headphones in System Settings → Bluetooth.")
-                                : root.guide-model.kind == 3 ? @tr("1. Turn the neckband on.\n2. Press and hold the power button until the LED starts flashing.\n3. Choose it in System Settings → Bluetooth.")
-                                : root.guide-model.kind == 4 ? @tr("1. Put both earbuds in the case and keep it open.\n2. Press and hold the button on the case until the LED flashes.\n3. Choose them in System Settings → Bluetooth.")
-                                : @tr("1. Put both earbuds in the case and open the lid.\n2. Press and hold the button on the case for about 2 seconds until the LED flashes.\n3. Choose them in System Settings → Bluetooth.");
-                            color: Theme.dim;
-                            font-size: 14px;
-                            wrap: word-wrap;
-                        }
-                        Text {
-                            text: root.guide-model.verified ? @tr("Tested with NothingX.") : @tr("Supported on a best-effort basis: controls use the shared Nothing protocol.");
-                            color: Theme.faint;
-                            font-size: 12px;
-                            wrap: word-wrap;
-                        }
-                        HorizontalLayout {
-                            spacing: 10px;
-                            alignment: center;
-                            Pill { text: @tr("Open Bluetooth settings"); accent: true; clicked => { root.open-bluetooth-settings(); } }
-                            Pill { text: @tr("Close"); clicked => { root.guide-sel = -1; } }
                         }
                     }
                 }
@@ -1494,45 +1516,106 @@ export component MainWindow inherits Window {
                     }
                 }
             }
+        }
+    }
 
-            // ===== gesture action picker (sheet) =====
-            if root.gesture-open >= 0 : Rectangle {
-                background: #000000c0;
-                TouchArea { clicked => { root.gesture-open = -1; } }
-                Card {
-                    width: 440px;
-                    height: Math.min(pick.preferred-height, root.height - 120px);
-                    background: #18181a;
-                    border-width: 1px;
-                    border-color: #2c2c2e;
-                    TouchArea { }
-                    pf := Flickable {
-                        content-height: pick.preferred-height;
-                        pick := VerticalLayout {
-                            width: pf.width;
-                            padding: 22px;
-                            spacing: 6px;
-                            Caption { text: root.gesture-title; }
-                            for a in root.gesture-actions : Rectangle {
-                                height: 48px;
-                                border-radius: 14px;
-                                background: a.selected ? #2c2c2e : (ata.has-hover ? #232326 : transparent);
-                                accessible-role: button;
-                                accessible-label: a.name;
-                                accessible-checked: a.selected;
-                                accessible-action-default => { root.set-gesture(root.gesture-open, a.code); }
-                                HorizontalLayout {
-                                    padding-left: 14px;
-                                    padding-right: 14px;
-                                    Text { text: a.name; color: Theme.fg; font-size: 15px; vertical-alignment: center; }
-                                    Rectangle { }
-                                    if a.selected : VerticalLayout {
-                                        alignment: center;
-                                        Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Theme.red; }
-                                    }
+    // ===== sheets: modal over the whole window (a click on the dimmed area closes them)
+    if root.page == 4 && root.guide-sel >= 0 : Rectangle {
+        background: #000000c0;
+        TouchArea { clicked => { root.guide-sel = -1; } }
+        Card {
+            width: 520px;
+            height: sheet.preferred-height;
+            background: #18181a;
+            border-width: 1px;
+            border-color: #2c2c2e;
+            TouchArea { }
+            sheet := VerticalLayout {
+                padding: 28px;
+                padding-top: 18px;
+                spacing: 12px;
+                HorizontalLayout {
+                    alignment: end;
+                    CloseButton { clicked => { root.guide-sel = -1; } }
+                }
+                HorizontalLayout {
+                    alignment: center;
+                    Image { source: root.guide-model.img; width: 220px; height: 220px; image-fit: contain; }
+                }
+                Text { text: root.guide-model.name; color: Theme.fg; font-size: 30px; font-family: Theme.serif; horizontal-alignment: center; }
+                Text {
+                    text: root.guide-model.pair == 0 ? @tr("1. Turn the headphones on.\n2. Press and hold the Bluetooth button for 2–3 seconds, until the light flashes white.\n3. Choose the headphones in System Settings → Bluetooth.")
+                        : root.guide-model.pair == 2 ? @tr("1. Put both earbuds in your ears.\n2. Touch and hold the touch areas of both earbuds at the same time for 5 seconds.\n3. Choose them in System Settings → Bluetooth.")
+                        : root.guide-model.pair == 3 ? @tr("1. Turn the neckband on.\n2. Press and hold the power button until the light starts flashing.\n3. Choose it in System Settings → Bluetooth.")
+                        : @tr("1. Put both earbuds in the case and leave the lid open.\n2. Press and hold the button on the case for about 2 seconds, until the light flashes white.\n3. Choose them in System Settings → Bluetooth.");
+                    color: Theme.dim;
+                    font-size: 14px;
+                    wrap: word-wrap;
+                }
+                Text {
+                    text: @tr("Once paired, NothingX connects to them automatically. If the controls don't appear, close Nothing X on your phone.");
+                    color: Theme.faint;
+                    font-size: 12px;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    alignment: center;
+                    padding-top: 4px;
+                    Pill { text: @tr("Open Bluetooth settings"); accent: true; clicked => { root.open-bluetooth-settings(); } }
+                }
+            }
+        }
+    }
+
+    if root.gesture-open >= 0 : Rectangle {
+        background: #000000c0;
+        // a click outside the sheet closes it (Rust is told, so a refresh can't reopen it)
+        TouchArea { clicked => { root.gesture-open = -1; root.close-gesture(); } }
+        Card {
+            width: 440px;
+            height: Math.min(head.preferred-height + pick.preferred-height, root.height - 120px);
+            background: #18181a;
+            border-width: 1px;
+            border-color: #2c2c2e;
+            clip: true;
+            TouchArea { }
+            VerticalLayout {
+                head := HorizontalLayout {
+                    padding: 22px;
+                    padding-right: 16px;
+                    padding-top: 16px;
+                    padding-bottom: 4px;
+                    spacing: 10px;
+                    Caption { text: root.gesture-title; vertical-alignment: center; overflow: elide; }
+                    Rectangle { }
+                    CloseButton { clicked => { root.gesture-open = -1; root.close-gesture(); } }
+                }
+                pf := Flickable {
+                    content-height: pick.preferred-height;
+                    pick := VerticalLayout {
+                        width: pf.width;
+                        padding: 22px;
+                        padding-top: 6px;
+                        spacing: 6px;
+                        for a in root.gesture-actions : Rectangle {
+                            height: 48px;
+                            border-radius: 14px;
+                            background: a.selected ? #2c2c2e : (ata.has-hover ? #232326 : transparent);
+                            accessible-role: button;
+                            accessible-label: a.name;
+                            accessible-checked: a.selected;
+                            accessible-action-default => { root.set-gesture(root.gesture-open, a.code); root.gesture-open = -1; }
+                            HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                Text { text: a.name; color: Theme.fg; font-size: 15px; vertical-alignment: center; }
+                                Rectangle { }
+                                if a.selected : VerticalLayout {
+                                    alignment: center;
+                                    Rectangle { width: 10px; height: 10px; border-radius: 5px; background: Theme.red; }
                                 }
-                                ata := TouchArea { mouse-cursor: pointer; clicked => { root.set-gesture(root.gesture-open, a.code); } }
                             }
+                            ata := TouchArea { mouse-cursor: pointer; clicked => { root.set-gesture(root.gesture-open, a.code); root.gesture-open = -1; } }
                         }
                     }
                 }
@@ -1543,16 +1626,28 @@ export component MainWindow inherits Window {
 
 // ================================================================== menu bar panel
 
-component PanelButton inherits Rectangle {
+component PanelPill inherits Rectangle {
     in property <string> text;
     callback clicked;
-    height: 56px;
-    border-radius: 28px;
+    height: 40px;
+    min-width: 0px;
+    horizontal-stretch: 1;
+    border-radius: 20px;
     background: ta.has-hover ? #333336 : #242426;
+    animate background { duration: 120ms; }
     accessible-role: button;
     accessible-label: root.text;
     accessible-action-default => { root.clicked(); }
-    Text { text: root.text; color: Theme.fg; font-size: 14px; font-weight: 600; letter-spacing: 0.4px; }
+    Text {
+        text: root.text;
+        color: Theme.fg;
+        font-size: 12.5px;
+        font-weight: 500;
+        letter-spacing: 0.4px;
+        overflow: elide;
+        width: parent.width - 16px;
+        horizontal-alignment: center;
+    }
     ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
@@ -1560,23 +1655,28 @@ component IconButton inherits Rectangle {
     in property <int> icon;
     in property <string> label;
     callback clicked;
-    width: 34px;
-    height: 34px;
-    border-radius: 17px;
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
     background: ta.has-hover ? #242426 : transparent;
+    animate background { duration: 120ms; }
     accessible-role: button;
     accessible-label: root.label;
     accessible-action-default => { root.clicked(); }
+    // outline gear
     if root.icon == 0 : Path {
-        width: 24px;
-        height: 24px;
+        width: 20px;
+        height: 20px;
         viewbox-width: 24;
         viewbox-height: 24;
-        fill-rule: evenodd;
-        fill: Theme.fg;
+        fill: transparent;
+        stroke: Theme.fg;
+        stroke-width: 1.6px;
+        stroke-line-join: round;
         commands: "M 19.49 10.71 L 22.14 10.88 L 22.14 13.12 L 19.49 13.29 L 19.02 14.91 L 18.21 16.39 L 19.96 18.38 L 18.38 19.96 L 16.39 18.21 L 14.91 19.02 L 13.29 19.49 L 13.12 22.14 L 10.88 22.14 L 10.71 19.49 L 9.09 19.02 L 7.61 18.21 L 5.62 19.96 L 4.04 18.38 L 5.79 16.39 L 4.98 14.91 L 4.51 13.29 L 1.86 13.12 L 1.86 10.88 L 4.51 10.71 L 4.98 9.09 L 5.79 7.61 L 4.04 5.62 L 5.62 4.04 L 7.61 5.79 L 9.09 4.98 L 10.71 4.51 L 10.88 1.86 L 13.12 1.86 L 13.29 4.51 L 14.91 4.98 L 16.39 5.79 L 18.38 4.04 L 19.96 5.62 L 18.21 7.61 L 19.02 9.09 Z M 15.30 12.00 A 3.3 3.3 0 1 0 8.70 12.00 A 3.3 3.3 0 1 0 15.30 12.00 Z";
     }
-    if root.icon == 1 : DotRing { n: 10; r: 10px; d: 2.6px; center: true; c: Theme.fg; }
+    // dotted circle: open the app
+    if root.icon == 1 : DotRing { n: 10; r: 9px; d: 2.4px; center: true; c: Theme.fg; }
     ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
@@ -1585,26 +1685,26 @@ component Segmented inherits Rectangle {
     in property <int> index: -1;
     in property <bool> has-transparency: true;
     callback picked(int);
-    height: 66px;
-    border-radius: 33px;
+    height: 50px;
+    border-radius: self.height / 2;
     background: #242426;
     property <int> n: root.has-transparency ? 3 : 2;
-    property <length> seg: (self.width - 8px) / root.n;
+    property <length> seg: (self.width - 6px) / root.n;
     Rectangle {
         visible: root.index >= 0;
-        x: 4px + Math.max(0, root.index) * root.seg;
-        y: 4px;
+        x: 3px + Math.max(0, root.index) * root.seg;
+        y: 3px;
         width: root.seg;
-        height: parent.height - 8px;
+        height: parent.height - 6px;
         border-radius: self.height / 2;
         background: #e6e6e8;
         animate x { duration: 220ms; easing: ease-out; }
     }
     for i in root.n : Rectangle {
-        x: 4px + i * root.seg;
-        y: 4px;
+        x: 3px + i * root.seg;
+        y: 3px;
         width: root.seg;
-        height: parent.height - 8px;
+        height: parent.height - 6px;
         property <int> kind: root.has-transparency ? i : (i == 0 ? 0 : 2);
         accessible-role: button;
         accessible-label: self.kind == 0 ? @tr("Noise cancellation") : self.kind == 1 ? @tr("Transparency") : @tr("Off");
@@ -1615,13 +1715,86 @@ component Segmented inherits Rectangle {
     }
 }
 
+// Noise cancellation strength: small text switch. Segments share the spare width but
+// never get narrower than their label ("Adaptive" is much longer than "Low").
+component LevelSwitch inherits Rectangle {
+    in property <[Preset]> items;
+    in property <int> current;
+    callback picked(int);
+    height: 30px;
+    border-radius: 15px;
+    background: #1a1a1c;
+    HorizontalLayout {
+        padding: 2px;
+        for l in root.items : Rectangle {
+            horizontal-stretch: 1;
+            min-width: lbl.preferred-width + 12px;
+            border-radius: self.height / 2;
+            background: l.id == root.current ? #e6e6e8 : (lta.has-hover ? #2c2c2e : transparent);
+            animate background { duration: 150ms; }
+            accessible-role: button;
+            accessible-label: l.name;
+            accessible-checked: l.id == root.current;
+            accessible-action-default => { root.picked(l.id); }
+            lbl := Text {
+                text: l.name;
+                font-size: 11px;
+                font-weight: 600;
+                color: l.id == root.current ? #000000 : Theme.dim;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            lta := TouchArea { mouse-cursor: pointer; clicked => { root.picked(l.id); } }
+        }
+    }
+}
+
+// "65% L" with a bar under it, like the Nothing X desktop flyout.
+component PanelBattery inherits VerticalLayout {
+    in property <BattItem> b;
+    in property <length> bar: 58px;
+    spacing: 7px;
+    HorizontalLayout {
+        alignment: center;
+        spacing: 3px;
+        Text { text: root.b.pct + "%" + (root.b.label != "" ? " " + root.b.label : ""); font-size: 15px; font-weight: 500; color: Theme.fg; }
+        if root.b.charging : Text { text: "+"; font-size: 15px; font-weight: 700; color: Theme.green; }
+    }
+    HorizontalLayout {
+        alignment: center;
+        Rectangle {
+            width: root.bar;
+            height: 5px;
+            border-radius: 2.5px;
+            background: #2a2a2d;
+            Rectangle {
+                x: 0px;
+                width: parent.width * Math.clamp(root.b.pct, 0, 100) / 100;
+                height: parent.height;
+                border-radius: 2.5px;
+                background: root.b.pct <= 15 ? Theme.red : (root.b.charging ? Theme.green : #8e8e93);
+            }
+        }
+    }
+}
+
+component LinkText inherits Text {
+    callback clicked;
+    color: lta.has-hover ? Theme.fg : Theme.dim;
+    font-size: 12px;
+    accessible-role: button;
+    accessible-label: self.text;
+    accessible-action-default => { root.clicked(); }
+    lta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
 export component TrayPanel inherits Window {
     title: "NothingX";
     no-frame: true;
     always-on-top: true;
     background: transparent;
     default-font-family: "Inter";
-    width: 392px;
+    width: 320px;
     height: panel.preferred-height;
 
     in property <string> device-name;
@@ -1629,6 +1802,7 @@ export component TrayPanel inherits Window {
     in property <bool> busy;
     in property <bool> has-device;
     in property <string> status;
+    in property <string> error;
     in property <bool> has-anc;
     in property <bool> has-transparency: true;
     in property <int> anc-mode: -1;
@@ -1657,123 +1831,128 @@ export component TrayPanel inherits Window {
     }
 
     panel := Rectangle {
-        background: #0c0c0d;
-        border-radius: 28px;
+        background: #0b0b0c;
+        border-radius: 22px;
         border-width: 1px;
         border-color: #2a2a2d;
-        HorizontalLayout {
-            padding: 18px;
-            padding-left: 10px;
-            spacing: 8px;
-            // vertical device name, read bottom-to-top like a dot-matrix strip
-            Rectangle {
-                width: 46px;
-                Text {
-                    width: parent.height;
-                    height: parent.width;
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    transform-rotation: -90deg;
-                    text: root.device-name;
-                    font-family: Theme.dot;
-                    font-size: 26px;
-                    color: Theme.fg;
-                    horizontal-alignment: right;
-                    vertical-alignment: center;
-                    overflow: elide;
+        VerticalLayout {
+            padding: 14px;
+            padding-left: 8px;
+            padding-bottom: 10px;
+            spacing: 12px;
+            HorizontalLayout {
+                spacing: 6px;
+                // device name, read bottom-to-top like a dot-matrix strip; anchored at the top
+                Rectangle {
+                    width: 30px;
+                    // tall enough for the name, but a very long custom name gets elided instead
+                    min-height: Math.min(name.preferred-width + 6px, 250px);
+                    name := Text {
+                        width: parent.height;
+                        height: parent.width;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        transform-rotation: -90deg;
+                        text: root.device-name;
+                        font-family: Theme.dot-bold;
+                        font-size: 21px;
+                        color: Theme.fg;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    TouchArea { mouse-cursor: pointer; clicked => { root.open-page(0); } }
                 }
-            }
-            VerticalLayout {
-                spacing: 16px;
-                HorizontalLayout {
-                    alignment: end;
-                    spacing: 8px;
-                    IconButton { icon: 0; label: @tr("Settings"); clicked => { root.open-page(5); } }
-                    IconButton { icon: 1; label: @tr("Open NothingX"); clicked => { root.open-page(0); } }
-                }
-                HorizontalLayout {
-                    spacing: 10px;
-                    PanelButton { text: @tr("EQUALIZER"); clicked => { root.open-page(1); } }
-                    PanelButton { text: @tr("CONTROLS"); clicked => { root.open-page(2); } }
-                }
-                if root.connected && root.has-anc : VerticalLayout {
+                VerticalLayout {
                     spacing: 12px;
-                    padding-top: 4px;
-                    Text { text: @tr("NOISE CONTROL"); font-family: Theme.dot; font-size: 17px; color: Theme.fg; horizontal-alignment: center; }
-                    Segmented {
-                        has-transparency: root.has-transparency;
-                        index: root.anc-mode == 1 ? 0 : root.anc-mode == 2 ? 1 : root.anc-mode == 0 ? (root.has-transparency ? 2 : 1) : -1;
-                        picked(i) => {
-                            if (i == 0) {
-                                root.set-anc(root.nc-level);
-                            } else if (i == 1 && root.has-transparency) {
-                                root.set-anc(7);
-                            } else {
-                                root.set-anc(5);
+                    HorizontalLayout {
+                        alignment: end;
+                        spacing: 4px;
+                        IconButton { icon: 0; label: @tr("Settings"); clicked => { root.open-page(5); } }
+                        IconButton { icon: 1; label: @tr("Open NothingX"); clicked => { root.open-page(0); } }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        PanelPill { text: @tr("EQUALIZER"); clicked => { root.open-page(1); } }
+                        PanelPill { text: @tr("CONTROLS"); clicked => { root.open-page(2); } }
+                    }
+                    if root.connected && root.has-anc : VerticalLayout {
+                        spacing: 9px;
+                        padding-top: 2px;
+                        Text { text: @tr("NOISE CONTROL"); font-family: Theme.dot; font-size: 14px; color: Theme.fg; horizontal-alignment: center; }
+                        Segmented {
+                            has-transparency: root.has-transparency;
+                            index: root.anc-mode == 1 ? 0 : root.anc-mode == 2 ? 1 : root.anc-mode == 0 ? (root.has-transparency ? 2 : 1) : -1;
+                            picked(i) => {
+                                if (i == 0) {
+                                    root.set-anc(root.nc-level);
+                                } else if (i == 1 && root.has-transparency) {
+                                    root.set-anc(7);
+                                } else {
+                                    root.set-anc(5);
+                                }
                             }
                         }
-                    }
-                    if root.anc-mode == 1 && root.nc-levels.length > 1 : HorizontalLayout {
-                        alignment: center;
-                        spacing: 6px;
-                        for l in root.nc-levels : Pill {
-                            height: 30px;
-                            pad: 10px;
+                        Text {
+                            text: root.anc-mode == 1 ? @tr("Noise cancellation") : root.anc-mode == 2 ? @tr("Transparency") : root.anc-mode == 0 ? @tr("Noise control off") : "";
+                            color: Theme.dim;
                             font-size: 12px;
-                            text: l.name;
-                            active: root.nc-level == l.id;
-                            clicked => { root.set-anc(l.id); }
+                            horizontal-alignment: center;
+                        }
+                        if root.anc-mode == 1 && root.nc-levels.length > 1 : LevelSwitch {
+                            items: root.nc-levels;
+                            current: root.nc-level;
+                            picked(id) => { root.set-anc(id); }
+                        }
+                    }
+                    if root.connected && root.batteries.length > 0 : HorizontalLayout {
+                        alignment: space-around;
+                        padding-top: 2px;
+                        for b in root.batteries : PanelBattery { b: b; bar: root.batteries.length > 1 ? 58px : 140px; }
+                    }
+                    if !root.connected : VerticalLayout {
+                        spacing: 10px;
+                        padding-top: 2px;
+                        Text {
+                            text: !root.has-device ? @tr("No Nothing or CMF device found")
+                                : root.busy ? @tr("Connecting…")
+                                : root.error != "" ? root.error : @tr("Headphones are not connected");
+                            color: Theme.dim;
+                            font-size: 13px;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            if root.has-device : Pill { height: 34px; pad: 16px; font-size: 13px; accent: true; enabled: !root.busy; text: root.status; clicked => { root.reconnect(); } }
+                            if !root.has-device : Pill { height: 34px; pad: 16px; font-size: 13px; text: @tr("Add device"); clicked => { root.open-page(4); } }
+                        }
+                    }
+                    if root.devices.length > 1 : HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        for d[i] in root.devices : Rectangle {
+                            width: 34px;
+                            height: 34px;
+                            border-radius: 17px;
+                            background: i == root.selected ? #f2f2f2 : #3a3a3c;
+                            accessible-role: button;
+                            accessible-label: d.name;
+                            accessible-checked: i == root.selected;
+                            accessible-action-default => { root.select-device(i); }
+                            Image { width: 27px; height: 27px; source: d.img; image-fit: contain; }
+                            TouchArea { mouse-cursor: pointer; clicked => { root.select-device(i); } }
                         }
                     }
                 }
-                if root.connected && root.batteries.length > 0 : HorizontalLayout {
-                    alignment: space-around;
-                    padding-top: 6px;
-                    for b in root.batteries : BatteryView { b: b; font-size: 22px; bar: root.batteries.length > 1 ? 70px : 150px; }
-                }
-                if !root.connected : VerticalLayout {
-                    spacing: 12px;
-                    padding-top: 6px;
-                    Text {
-                        text: root.has-device ? (root.busy ? @tr("Connecting…") : @tr("Headphones are not connected")) : @tr("No Nothing or CMF device found");
-                        color: Theme.dim;
-                        font-size: 14px;
-                        horizontal-alignment: center;
-                        wrap: word-wrap;
-                    }
-                    if root.has-device : HorizontalLayout {
-                        alignment: center;
-                        Pill { accent: true; enabled: !root.busy; text: root.status; clicked => { root.reconnect(); } }
-                    }
-                }
-                if root.devices.length > 1 : HorizontalLayout {
-                    spacing: 8px;
-                    alignment: center;
-                    for d[i] in root.devices : Rectangle {
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 20px;
-                        background: i == root.selected ? #f2f2f2 : #3a3a3c;
-                        accessible-role: button;
-                        accessible-label: d.name;
-                        accessible-checked: i == root.selected;
-                        accessible-action-default => { root.select-device(i); }
-                        Image { width: 32px; height: 32px; source: d.img; image-fit: contain; }
-                        TouchArea { mouse-cursor: pointer; clicked => { root.select-device(i); } }
-                    }
-                }
-                HorizontalLayout {
-                    alignment: end;
-                    Text {
-                        text: @tr("Quit");
-                        color: qta.has-hover ? Theme.fg : Theme.faint;
-                        font-size: 12px;
-                        accessible-role: button;
-                        accessible-label: @tr("Quit NothingX");
-                        accessible-action-default => { root.quit(); }
-                        qta := TouchArea { mouse-cursor: pointer; clicked => { root.quit(); } }
-                    }
-                }
+            }
+            Rectangle { height: 1px; background: #1f1f22; }
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 6px;
+                LinkText { text: @tr("Open NothingX"); clicked => { root.open-page(0); } }
+                Rectangle { }
+                LinkText { text: @tr("Quit"); clicked => { root.quit(); } }
             }
         }
     }

@@ -234,6 +234,7 @@ fn bundled(code: &str) -> Option<&'static [u8]> {
         "B155" => include_bytes!("../assets/devices/B155.png"),
         "B157" => include_bytes!("../assets/devices/B157.png"),
         "B163" => include_bytes!("../assets/devices/B163.png"),
+        "B164" => include_bytes!("../assets/devices/B164.png"),
         "B168" => include_bytes!("../assets/devices/B168.png"),
         "B170" => include_bytes!("../assets/devices/B170.png"),
         "B171" => include_bytes!("../assets/devices/B171.png"),
@@ -249,6 +250,7 @@ fn bundled(code: &str) -> Option<&'static [u8]> {
         "B185" => include_bytes!("../assets/devices/B185.png"),
         "B186" => include_bytes!("../assets/devices/B186.png"),
         "B190" => include_bytes!("../assets/devices/B190.png"),
+        "B193" => include_bytes!("../assets/devices/B193.png"),
         _ => return None,
     })
 }
@@ -328,12 +330,31 @@ pub fn dmg_background(scale: f32) -> Pixmap {
         pm.fill_path(&p, &solid([255, 255, 255], 235), FillRule::Winding, base, None);
     }
     pm.fill_path(&circle(372.0, 190.0, 4.2), &solid(RED, 255), FillRule::Winding, base, None);
-    // captions in dot-matrix
-    for (text, y, dot, alpha) in [("NOTHINGX FOR MAC", 46.0, 3.2, 255u8), ("DRAG TO APPLICATIONS", 318.0, 2.2, 200), ("UNOFFICIAL", 352.0, 1.6, 110)] {
+    // captions in dot-matrix; the last two lines explain the Gatekeeper prompt of an
+    // app that is not notarized
+    for (text, y, dot, alpha) in [
+        ("NOTHINGX FOR MAC", 38.0, 3.2, 255u8),
+        ("UNOFFICIAL", 86.0, 1.6, 110),
+        ("DRAG TO APPLICATIONS", 292.0, 2.2, 210),
+        ("BLOCKED ON FIRST LAUNCH?", 334.0, 1.4, 160),
+        ("SETTINGS > PRIVACY & SECURITY > OPEN ANYWAY", 356.0, 1.4, 160),
+    ] {
         let t = crate::dotmatrix::render_pixmap(text, dot * scale, dot * 0.55 * scale, [255, 255, 255], false);
         let mut paint = PixmapPaint::default();
         paint.opacity = alpha as f32 / 255.0;
         pm.draw_pixmap(((w - t.width() as f32) / 2.0) as i32, (y * scale) as i32, t.as_ref(), &paint, Transform::identity(), None);
     }
     pm
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn every_model_has_a_bundled_picture() {
+        for m in crate::catalog::MODELS {
+            let png = super::bundled(m.code).unwrap_or_else(|| panic!("no image for {}", m.code));
+            let pm = tiny_skia::Pixmap::decode_png(png).expect("valid png");
+            assert!(pm.width() >= 400 && pm.height() >= 400, "{} is {}x{}", m.code, pm.width(), pm.height());
+        }
+    }
 }

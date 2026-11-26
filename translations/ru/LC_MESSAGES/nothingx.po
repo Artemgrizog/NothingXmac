@@ -3,6 +3,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: ru\n"
 
+msgid "Close"
+msgstr "Закрыть"
+
 msgid "DEVICES"
 msgstr "УСТРОЙСТВА"
 
@@ -49,10 +52,10 @@ msgid "Headphones are not connected"
 msgstr "Наушники не подключены"
 
 msgid "Turn the headphones on and connect them to this Mac. If they are connected but controls don't appear, close Nothing X on your phone — the headphones accept only one control app at a time."
-msgstr "Включите наушники и подключите их к этому Mac. Если они подключены, а управление не появляется, закройте Nothing X на телефоне — наушники принимают только одно приложение управления одновременно."
+msgstr "Включите наушники и подключите их к этому Mac. Если они подключены, а управление не появляется, закройте Nothing X на телефоне: наушники работают только с одним приложением управления одновременно."
 
 msgid "NOISE CONTROL"
-msgstr "ШУМОПОДАВЛЕНИЕ"
+msgstr "УПРАВЛЕНИЕ ШУМОМ"
 
 msgid "Noise cancellation"
 msgstr "Шумоподавление"
@@ -76,10 +79,10 @@ msgid "Spatial audio"
 msgstr "Пространственный звук"
 
 msgid "BASS"
-msgstr "БАС"
+msgstr "БАСЫ"
 
 msgid "Bass enhance"
-msgstr "Оптимизация баса"
+msgstr "Усиление басов"
 
 msgid "On · level {}"
 msgstr "Вкл. · уровень {}"
@@ -91,7 +94,7 @@ msgid "LATENCY"
 msgstr "ЗАДЕРЖКА"
 
 msgid "Low latency mode"
-msgstr "Режим малой задержки"
+msgstr "Режим низкой задержки"
 
 msgid "On"
 msgstr "Вкл."
@@ -118,7 +121,7 @@ msgid "Simple"
 msgstr "Простой"
 
 msgid "Advanced"
-msgstr "Продвинутый"
+msgstr "Расширенный"
 
 msgid "PRESETS"
 msgstr "ПРЕСЕТЫ"
@@ -142,7 +145,7 @@ msgid "Treble"
 msgstr "Высокие"
 
 msgid "ADVANCED EQ"
-msgstr "ПРОДВИНУТЫЙ ЭКВАЛАЙЗЕР"
+msgstr "РАСШИРЕННЫЙ ЭКВАЛАЙЗЕР"
 
 msgid "Drag the points or pick a band below. Up to 8 bands."
 msgstr "Перетаскивайте точки или выберите полосу ниже. До 8 полос."
@@ -157,7 +160,7 @@ msgid "Low shelf"
 msgstr "НЧ-полка"
 
 msgid "Peak"
-msgstr "Пик"
+msgstr "Колокол"
 
 msgid "High shelf"
 msgstr "ВЧ-полка"
@@ -186,20 +189,20 @@ msgstr "Устройство"
 msgid "Connect your headphones to see their settings."
 msgstr "Подключите наушники, чтобы увидеть их настройки."
 
-msgid "WEARING"
-msgstr "НОШЕНИЕ"
+msgid "FEATURES"
+msgstr "ФУНКЦИИ"
 
 msgid "In-ear detection"
 msgstr "Датчик ношения"
 
 msgid "Pause playback when you take the headphones off."
-msgstr "Пауза, когда вы снимаете наушники."
+msgstr "Музыка встаёт на паузу, когда вы снимаете наушники."
 
 msgid "Personalised noise cancellation"
 msgstr "Персональное шумоподавление"
 
 msgid "Tune noise cancellation to the shape of your ears."
-msgstr "Подстройка шумоподавления под форму ушей."
+msgstr "Шумоподавление подстраивается под форму ваших ушей."
 
 msgid "CONNECTIONS"
 msgstr "ПОДКЛЮЧЕНИЯ"
@@ -208,7 +211,7 @@ msgid "Dual connection"
 msgstr "Двойное подключение"
 
 msgid "Stay connected to two devices at once."
-msgstr "Подключение к двум устройствам одновременно."
+msgstr "Наушники остаются подключёнными сразу к двум устройствам."
 
 msgid "Connected"
 msgstr "Подключено"
@@ -220,7 +223,7 @@ msgid "Find my device"
 msgstr "Найти устройство"
 
 msgid "Plays a loud sound. Take the headphones off first."
-msgstr "Играет громкий звук. Сначала снимите наушники."
+msgstr "Наушники издадут громкий звук — сначала снимите их."
 
 msgid "Stop"
 msgstr "Остановить"
@@ -258,8 +261,11 @@ msgstr "Левый: {}"
 msgid "Right: {}"
 msgstr "Правый: {}"
 
-msgid "ABOUT"
-msgstr "О ПРИЛОЖЕНИИ"
+msgid "ABOUT DEVICE"
+msgstr "ОБ УСТРОЙСТВЕ"
+
+msgid "Firmware updates are installed with the Nothing X app on your phone."
+msgstr "Прошивка обновляется через приложение Nothing X на телефоне."
 
 msgid "Connection guide"
 msgstr "Руководство по подключению"
@@ -270,29 +276,20 @@ msgstr "Как добавить наушники"
 msgid "1. Put the headphones in pairing mode (pick your model below for the exact steps).\n2. Pair them in System Settings → Bluetooth.\n3. NothingX finds them automatically."
 msgstr "1. Переведите наушники в режим сопряжения (точные шаги — в карточке вашей модели ниже).\n2. Подключите их в Системных настройках → Bluetooth.\n3. NothingX найдёт их автоматически."
 
-msgid " · tested"
-msgstr " · проверено"
+msgid "1. Turn the headphones on.\n2. Press and hold the Bluetooth button for 2–3 seconds, until the light flashes white.\n3. Choose the headphones in System Settings → Bluetooth."
+msgstr "1. Включите наушники.\n2. Удерживайте кнопку Bluetooth 2–3 секунды, пока индикатор не замигает белым.\n3. Выберите наушники в Системных настройках → Bluetooth."
 
-msgid "1. Turn the headphones on.\n2. Press and hold the power / Bluetooth button until the LED starts flashing.\n3. Choose the headphones in System Settings → Bluetooth."
-msgstr "1. Включите наушники.\n2. Нажмите и удерживайте кнопку питания / Bluetooth, пока индикатор не начнёт мигать.\n3. Выберите наушники в Системных настройках → Bluetooth."
+msgid "1. Put both earbuds in your ears.\n2. Touch and hold the touch areas of both earbuds at the same time for 5 seconds.\n3. Choose them in System Settings → Bluetooth."
+msgstr "1. Вставьте оба наушника в уши.\n2. Одновременно коснитесь сенсорных зон обоих наушников и удерживайте 5 секунд.\n3. Выберите их в Системных настройках → Bluetooth."
 
-msgid "1. Turn the neckband on.\n2. Press and hold the power button until the LED starts flashing.\n3. Choose it in System Settings → Bluetooth."
+msgid "1. Turn the neckband on.\n2. Press and hold the power button until the light starts flashing.\n3. Choose it in System Settings → Bluetooth."
 msgstr "1. Включите наушники.\n2. Удерживайте кнопку питания, пока индикатор не начнёт мигать.\n3. Выберите их в Системных настройках → Bluetooth."
 
-msgid "1. Put both earbuds in the case and keep it open.\n2. Press and hold the button on the case until the LED flashes.\n3. Choose them in System Settings → Bluetooth."
-msgstr "1. Положите оба наушника в кейс и не закрывайте его.\n2. Удерживайте кнопку на кейсе, пока индикатор не замигает.\n3. Выберите их в Системных настройках → Bluetooth."
+msgid "1. Put both earbuds in the case and leave the lid open.\n2. Press and hold the button on the case for about 2 seconds, until the light flashes white.\n3. Choose them in System Settings → Bluetooth."
+msgstr "1. Положите оба наушника в кейс и не закрывайте крышку.\n2. Удерживайте кнопку на кейсе около 2 секунд, пока индикатор не замигает белым.\n3. Выберите их в Системных настройках → Bluetooth."
 
-msgid "1. Put both earbuds in the case and open the lid.\n2. Press and hold the button on the case for about 2 seconds until the LED flashes.\n3. Choose them in System Settings → Bluetooth."
-msgstr "1. Положите оба наушника в кейс и откройте крышку.\n2. Удерживайте кнопку на кейсе около 2 секунд, пока индикатор не замигает.\n3. Выберите их в Системных настройках → Bluetooth."
-
-msgid "Tested with NothingX."
-msgstr "Проверено с NothingX."
-
-msgid "Supported on a best-effort basis: controls use the shared Nothing protocol."
-msgstr "Поддержка экспериментальная: управление идёт по общему протоколу Nothing."
-
-msgid "Close"
-msgstr "Закрыть"
+msgid "Once paired, NothingX connects to them automatically. If the controls don't appear, close Nothing X on your phone."
+msgstr "После сопряжения NothingX подключится к ним сам. Если управление не появилось, закройте Nothing X на телефоне."
 
 msgid "Settings"
 msgstr "Настройки"
@@ -316,7 +313,10 @@ msgid "Language"
 msgstr "Язык"
 
 msgid "System"
-msgstr "Системный"
+msgstr "Как в системе"
+
+msgid "ABOUT"
+msgstr "О ПРИЛОЖЕНИИ"
 
 msgid "Unofficial app, not affiliated with Nothing Technology Limited. Nothing and CMF are trademarks of their owner."
 msgstr "Неофициальное приложение, не связано с Nothing Technology Limited. Nothing и CMF — товарные знаки их владельца."
@@ -330,11 +330,11 @@ msgstr "Открыть журнал"
 msgid "Open NothingX"
 msgstr "Открыть NothingX"
 
+msgid "Noise control off"
+msgstr "Шумоподавление выключено"
+
 msgid "Connecting…"
 msgstr "Подключение…"
 
 msgid "Quit"
 msgstr "Выйти"
-
-msgid "Quit NothingX"
-msgstr "Выйти из NothingX"

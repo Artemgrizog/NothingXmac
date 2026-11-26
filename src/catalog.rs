@@ -92,13 +92,46 @@ pub struct Model {
     pub dark: bool,
     pub accent: Option<[u8; 3]>,
     pub caps: Caps,
-    /// Tested on real hardware.
+    /// Tested on real hardware (documentation only; the UI treats all models alike).
+    #[allow(dead_code)]
     pub verified: bool,
+}
+
+/// How a model enters Bluetooth pairing mode (selects the instructions in the guide).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Pairing {
+    /// headphones: hold the Bluetooth button
+    Button = 0,
+    /// earbuds: hold the button on the open case
+    Case = 1,
+    /// earbuds without a case button: touch and hold both earbuds
+    Touch = 2,
+    /// neckband: hold the power button
+    Power = 3,
 }
 
 impl Model {
     pub fn is_cmf(&self) -> bool {
         self.name.starts_with("CMF")
+    }
+
+    /// Product name with the brand, e.g. "Nothing Ear (3)" or "CMF Buds Pro 2".
+    pub fn full_name(&self) -> String {
+        if self.is_cmf() || self.name.starts_with("Nothing") {
+            self.name.to_string()
+        } else {
+            format!("Nothing {}", self.name)
+        }
+    }
+
+    pub fn pairing(&self) -> Pairing {
+        match self.kind {
+            Kind::Over => Pairing::Button,
+            Kind::Neck => Pairing::Power,
+            // CMF Buds Neo: wear both earbuds, then touch and hold both for 5 s
+            _ if self.code == "B193" => Pairing::Touch,
+            _ => Pairing::Case,
+        }
     }
 }
 
@@ -362,7 +395,7 @@ pub static MODELS: &[Model] = &[
     m!("B179", [], "CMF Buds 2", "buds 2", false, Kind::Bud, false, ORANGE, false,
         Caps { spatial: Spatial::Switch, in_ear: false, fit_test: true, gestures: G_CMF_NEWS, ..CMF_BASE }),
     m!("B193", [], "CMF Buds Neo", "buds neo", false, Kind::Bud, false, ORANGE, false,
-        Caps { nc: Some(&NC_SINGLE), spatial: Spatial::Switch, in_ear: false, ..CMF_BASE }),
+        Caps { spatial: Spatial::Switch, in_ear: false, ..CMF_BASE }),
     m!("B168", [], "CMF Buds", "cmf buds", true, Kind::Bud, false, ORANGE, false,
         Caps { nc: Some(&NC_SINGLE), ..CMF_BASE }),
     m!("B164", [], "CMF Neckband Pro", "neckband pro", false, Kind::Neck, true, ORANGE, false,
@@ -455,5 +488,17 @@ mod tests {
         assert!(identify("AirPods Pro").is_none());
         assert_eq!(by_model_id(0xB170).map(|m| m.code), Some("B170"));
         assert_eq!(by_model_id(0xB187).map(|m| m.code), Some("B172"));
+        assert_eq!(identify("CMF Buds Neo").map(|m| m.code), Some("B193"));
+    }
+
+    #[test]
+    fn product_names_and_pairing() {
+        assert_eq!(by_model_id(0xB170).unwrap().full_name(), "Nothing Headphone (1)");
+        assert_eq!(by_model_id(0xB172).unwrap().full_name(), "CMF Buds Pro 2");
+        assert_eq!(GENERIC.full_name(), "Nothing device");
+        assert_eq!(by_model_id(0xB170).unwrap().pairing(), Pairing::Button);
+        assert_eq!(by_model_id(0xB193).unwrap().pairing(), Pairing::Touch);
+        assert_eq!(by_model_id(0xB164).unwrap().pairing(), Pairing::Power);
+        assert_eq!(by_model_id(0xB155).unwrap().pairing(), Pairing::Case);
     }
 }

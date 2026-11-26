@@ -12,30 +12,36 @@ to the headphones directly over Bluetooth (IOBluetooth RFCOMM). No Electron, no 
 
 ## Features
 
-- **Menu bar panel** — noise control (with levels), battery for each earbud / case, quick links; battery % next to the icon.
+- **Menu bar panel** — switch noise control and its level, see the battery of each earbud and the case, jump to the equalizer or controls; battery % next to the menu bar icon. Works over full-screen apps.
 - **Noise control** — noise cancellation (high / mid / low / adaptive), transparency, off.
 - **Equalizer** — presets (incl. CMF / Dirac Opteo presets), custom 3-band EQ and an **8-band parametric "Advanced" EQ** with a live response graph.
 - **Controls** — customize gestures and buttons (pinch / tap / press, Headphone (1) button and roller, CMF case knob…).
-- **Device settings** — in-ear detection, dual connection (with the list of paired hosts), personalised ANC, find my device, ear tip fit test, firmware / serial info.
+- **Device settings** — in-ear detection, dual connection (with the list of paired hosts), personalised ANC, find my device, ear tip fit test, firmware version, serial number.
 - **Spatial audio** (head tracking / fixed), **bass enhance** with levels, **low latency mode**.
-- Connection guide for every Nothing and CMF model, Russian / English UI, open at login.
+- Pairing guide for every Nothing and CMF model, Russian / English UI, open at login.
+
+**Firmware updates** are not part of the app: Nothing's update protocol and firmware files are not public,
+and a failed update can brick the headphones. Update them with the Nothing X app on your phone; NothingX shows
+the installed version.
 
 ## Supported devices
 
-| Status | Models |
-| --- | --- |
-| Tested on hardware | Headphone (1) |
-| Supported (shared Nothing protocol) | Headphone (1) Pro, Headphone (a), Ear (3), Ear (3a), Ear, Ear (2), Ear (1), Ear (a), Ear (stick), Ear (open), CMF Headphone Pro, CMF Buds, CMF Buds 2, CMF Buds 2a, CMF Buds 2 Plus, CMF Buds Pro, CMF Buds Pro 2, CMF Buds Neo, CMF Neckband Pro |
+**Nothing:** Headphone (1), Headphone (1) Pro, Headphone (a), Ear (3), Ear (3a), Ear, Ear (2), Ear (1), Ear (a), Ear (stick), Ear (open).
+**CMF:** Headphone Pro, Buds, Buds 2, Buds 2a, Buds 2 Plus, Buds Pro, Buds Pro 2, Buds Neo, Neckband Pro.
 
-Reports for untested models are very welcome (Settings → Open log helps a lot).
+All models share the Nothing control protocol; development and testing happened on a Headphone (1).
+Feature sets per model follow `src/catalog.rs`. If something doesn't work on your model, please open an
+issue and attach the log (Settings → Open log).
 
 ## Install
 
 1. Download `NothingX-<version>.dmg` from Releases, open it and drag **NothingX** to **Applications**.
-2. The app is not notarized by Apple. On first launch macOS will block it: open
-   **System Settings → Privacy & Security** and click **Open Anyway** (or right-click the app → Open).
-   Alternatively run `xattr -dr com.apple.quarantine /Applications/NothingX.app`.
-3. Allow Bluetooth access when asked.
+2. The app is not notarized by Apple, so on first launch macOS blocks it ("Apple could not verify…").
+   Click **Done**, open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**,
+   then confirm with your password. You only need to do this once.
+   Alternatively run `xattr -dr com.apple.quarantine /Applications/NothingX.app` in Terminal.
+3. Allow Bluetooth access when asked. NothingX lives in the menu bar; closing the window keeps it running there
+   (use **Quit** in the panel to exit).
 
 The headphones accept only **one control app at a time** — if controls don't appear, close Nothing X on your phone.
 
@@ -83,21 +89,26 @@ UI built with [Slint](https://slint.dev) under its royalty-free license.
 
 ### Возможности
 
-- **Панель в строке меню** — шумоподавление с уровнями, заряд наушников и кейса, быстрые переходы; процент заряда рядом с иконкой.
+- **Панель в строке меню** — переключение шумоподавления и его уровня, заряд наушников и кейса, переход к эквалайзеру и управлению; процент заряда рядом с иконкой. Открывается и поверх полноэкранных приложений.
 - **Шумоподавление** — высокое / среднее / низкое / адаптивное, прозрачность, выкл.
-- **Эквалайзер** — пресеты (в т.ч. Dirac Opteo у CMF), свой 3-полосный и **продвинутый 8-полосный** с графиком АЧХ.
+- **Эквалайзер** — пресеты (в т.ч. Dirac Opteo у CMF), свой 3-полосный и **расширенный 8-полосный** с графиком АЧХ.
 - **Управление** — настройка жестов и кнопок.
-- **Настройки устройства** — датчик ношения, двойное подключение со списком устройств, персональное шумоподавление, поиск наушников, тест посадки амбушюр, прошивка и серийный номер.
-- **Пространственный звук**, **оптимизация баса**, **режим малой задержки**, руководство по подключению, автозапуск.
+- **Настройки устройства** — датчик ношения, двойное подключение со списком устройств, персональное шумоподавление, поиск наушников, тест посадки амбушюр, версия прошивки и серийный номер.
+- **Пространственный звук**, **усиление басов**, **режим низкой задержки**, инструкции по сопряжению для каждой модели, автозапуск.
 
-Проверено на **Headphone (1)**; остальные модели поддерживаются по общему протоколу Nothing (отмечены как экспериментальные).
+**Обновление прошивки** в приложение не входит: протокол обновлений и файлы прошивок Nothing закрыты, а неудачное
+обновление может «окирпичить» наушники. Обновляйте их через Nothing X на телефоне — NothingX показывает текущую версию.
+
+Все модели работают по общему протоколу Nothing; разработка и проверка велись на Headphone (1).
 
 ### Установка
 
 1. Скачайте `NothingX-<версия>.dmg`, откройте и перетащите **NothingX** в **Программы**.
-2. Приложение не нотаризовано Apple: при первом запуске откройте **Системные настройки → Конфиденциальность и безопасность**
-   и нажмите **«Всё равно открыть»** (или правый клик по приложению → «Открыть»).
-3. Разрешите доступ к Bluetooth.
+2. Приложение не нотаризовано Apple, поэтому при первом запуске macOS его заблокирует. Нажмите **«Готово»**,
+   откройте **Системные настройки → Конфиденциальность и безопасность**, пролистайте вниз и нажмите
+   **«Всё равно открыть»**, затем подтвердите паролем. Это нужно сделать один раз.
+3. Разрешите доступ к Bluetooth. NothingX живёт в строке меню: если закрыть окно, приложение продолжит работать
+   (выйти — кнопка **«Выйти»** в панели).
 
 Наушники принимают только одно приложение управления — если управление не появляется, закройте Nothing X на телефоне.
 

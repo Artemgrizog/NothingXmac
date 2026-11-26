@@ -39,14 +39,13 @@ pub fn tr(en: &'static str) -> &'static str {
         "More treble" => "Больше высоких",
         "Voice" => "Голос",
         "Custom" => "Свой",
-        "Advanced" => "Продвинутый",
+        "Advanced" => "Расширенный",
         "Rock" => "Рок",
         "Electronic" => "Электроника",
         "Pop" => "Поп",
         "Enhance vocals" => "Усиление вокала",
         "Classical" => "Классика",
         // connection
-        "Reconnect" => "Подключиться снова",
         "Connect" => "Подключить",
         "Connecting…" => "Подключение…",
         "Control service not found" => "Служба управления не найдена",
@@ -64,7 +63,7 @@ pub fn tr(en: &'static str) -> &'static str {
         "Case knob" => "Колесо на кейсе",
         "Button" => "Кнопка",
         "Roller" => "Колесо",
-        "Slider" => "Слайдер",
+        "Slider" => "Ползунок",
         "Controls" => "Управление",
         // gestures: types
         "Press" => "Нажатие",
@@ -113,7 +112,7 @@ pub fn tr(en: &'static str) -> &'static str {
         "Dual connection on" => "Двойное подключение вкл.",
         "Dual connection off" => "Двойное подключение выкл.",
         "Good fit" => "Хорошая посадка",
-        "Try another ear tip" => "Попробуйте другой амбушюр",
+        "Try another ear tip" => "Попробуйте другие амбушюры",
         "Not measured" => "Не измерено",
         // about rows
         "Name" => "Название",
@@ -121,8 +120,7 @@ pub fn tr(en: &'static str) -> &'static str {
         "Firmware" => "Прошивка",
         "Serial number" => "Серийный номер",
         "Bluetooth address" => "Адрес Bluetooth",
-        " · tested" => " · проверено",
-        " · experimental" => " · экспериментально",
+        "Nothing device" => "Устройство Nothing",
         _ => en,
     }
 }

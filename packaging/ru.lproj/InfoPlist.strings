@@ -1,0 +1,3 @@
+"NSBluetoothAlwaysUsageDescription" = "NothingX подключается к наушникам Nothing / CMF по Bluetooth, чтобы переключать шумоподавление и эквалайзер и показывать заряд.";
+"NSBluetoothPeripheralUsageDescription" = "NothingX подключается к наушникам Nothing / CMF по Bluetooth.";
+"NSHumanReadableCopyright" = "Неофициальное приложение, не связано с Nothing Technology Limited. Лицензия MIT.";

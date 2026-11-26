@@ -9,6 +9,7 @@ APP=target/dev/NothingX.app
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp target/debug/nothingx "$APP/Contents/MacOS/NothingX"
 sed "s/@VERSION@/$VER/g" packaging/Info.plist > "$APP/Contents/Info.plist"
+cp -R packaging/en.lproj packaging/ru.lproj "$APP/Contents/Resources/"
 [ -f dist/NothingX.app/Contents/Resources/AppIcon.icns ] && cp dist/NothingX.app/Contents/Resources/AppIcon.icns "$APP/Contents/Resources/" || true
 # Stable designated requirement (dev only): macOS keeps the Bluetooth permission
 # across rebuilds instead of asking again for every new ad-hoc signature.

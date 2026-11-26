@@ -29,7 +29,7 @@ slint::include_modules!();
 const EQ_H: f32 = 170.0;
 const ADV_H: f32 = 230.0;
 const ADV_RANGE: f64 = 12.0;
-const PANEL_W: f64 = 392.0;
+const PANEL_W: f64 = 320.0;
 
 struct Dev {
     info: bt::Paired,
@@ -124,6 +124,7 @@ struct State {
     /// logical width of the EQ graphs
     graph_w: f32,
     last_page: i32,
+    app_active: bool,
 }
 
 fn set_policy(regular: bool) {
@@ -142,6 +143,29 @@ fn activate() {
         #[allow(deprecated)]
         NSApplication::sharedApplication(mtm).activateIgnoringOtherApps(true);
     }
+}
+
+fn app_is_active() -> bool {
+    MainThreadMarker::new().map_or(false, |mtm| NSApplication::sharedApplication(mtm).isActive())
+}
+
+/// Menu bar panel window: shown on the current Space (also over full-screen apps),
+/// at the level of other status bar windows.
+fn setup_panel_window(p: &TrayPanel) {
+    use objc2_app_kit::{NSStatusWindowLevel, NSView, NSWindowCollectionBehavior as B};
+    use slint::winit_030::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
+    use slint::winit_030::WinitWindowAccessor;
+    p.window().with_winit_window(|w| {
+        let Ok(h) = w.window_handle() else { return };
+        if let RawWindowHandle::AppKit(h) = h.as_raw() {
+            // SAFETY: winit hands out the NSView of this live window; we are on the main thread
+            let view: &NSView = unsafe { h.ns_view.cast().as_ref() };
+            if let Some(win) = view.window() {
+                win.setCollectionBehavior(B::CanJoinAllSpaces | B::FullScreenAuxiliary | B::IgnoresCycle);
+                win.setLevel(NSStatusWindowLevel);
+            }
+        }
+    });
 }
 
 fn show_window(ui: &MainWindow) {
@@ -274,6 +298,7 @@ impl State {
             pushed_custom: None,
             graph_w: 600.0,
             last_page: 0,
+            app_active: true,
             settings,
         }
     }
@@ -357,15 +382,27 @@ impl State {
     }
 
     fn on_link_ready(&mut self) {
-        let caps = self.caps();
         let mut qs: Vec<(u16, Vec<u8>)> = vec![
             (cmd::MODEL_GET, vec![]),
             (cmd::BATTERY_GET, vec![]),
-            (cmd::ANC_GET, vec![]),
-            (self.eq_get_cmd(), vec![]),
             (cmd::FIRMWARE_GET, vec![]),
             (cmd::SERIAL_GET, vec![]),
         ];
+        qs.extend(self.cap_queries());
+        let now = Instant::now();
+        for (i, (c, p)) in qs.into_iter().enumerate() {
+            // the first write right after the channel opens is sometimes dropped
+            self.pending.push((now + Duration::from_millis(200 + i as u64 * 70), c, p));
+        }
+        self.last_batt = Instant::now();
+        self.error.clear();
+        self.dirty = true;
+    }
+
+    /// State queries that depend on what the model supports.
+    fn cap_queries(&self) -> Vec<(u16, Vec<u8>)> {
+        let caps = self.caps();
+        let mut qs: Vec<(u16, Vec<u8>)> = vec![(cmd::ANC_GET, vec![]), (self.eq_get_cmd(), vec![])];
         if caps.latency {
             qs.push((cmd::LATENCY_GET, vec![]));
         }
@@ -394,14 +431,7 @@ impl State {
             qs.push((cmd::DUAL_GET, vec![]));
             qs.push((cmd::DUAL_DEVICES_GET, vec![0x00]));
         }
-        let now = Instant::now();
-        for (i, (c, p)) in qs.into_iter().enumerate() {
-            // the first write right after the channel opens is sometimes dropped
-            self.pending.push((now + Duration::from_millis(200 + i as u64 * 70), c, p));
-        }
-        self.last_batt = Instant::now();
-        self.error.clear();
-        self.dirty = true;
+        qs
     }
 
     // ------------------------------------------------------------ scanning / link
@@ -584,6 +614,13 @@ impl State {
                             d.model = m;
                         }
                         self.hero_for.clear();
+                        self.gesture_open = None;
+                        let now = Instant::now();
+                        for (i, (c, p)) in self.cap_queries().into_iter().enumerate() {
+                            if !self.pending.iter().any(|(_, q, _)| *q == c) {
+                                self.pending.push((now + Duration::from_millis(100 + i as u64 * 70), c, p));
+                            }
+                        }
                     }
                 }
             }
@@ -662,6 +699,19 @@ impl State {
             log!("ui: menu bar icon clicked");
             self.toggle_panel();
         }
+        // opening the app again (Finder, Launchpad, Spotlight) while it only lives in the
+        // menu bar: bring the window back instead of doing nothing
+        let active = app_is_active();
+        if active && !self.app_active {
+            if let Some(ui) = self.ui.upgrade() {
+                let panel_visible = self.panel.upgrade().map_or(false, |p| p.window().is_visible());
+                if !panel_visible && !ui.window().is_visible() {
+                    log!("ui: app activated without a window, showing it");
+                    show_window(&ui);
+                }
+            }
+        }
+        self.app_active = active;
         if let Some(ui) = self.ui.upgrade() {
             let page = ui.get_page();
             if page != self.last_page {
@@ -1010,6 +1060,7 @@ impl State {
         }
         self.refresh_ui();
         let _ = p.show();
+        setup_panel_window(&p);
         activate();
         use slint::winit_030::WinitWindowAccessor;
         p.window().with_winit_window(|w| w.focus_window());
@@ -1086,13 +1137,8 @@ impl State {
                 ui.set_hero(hero);
             }
         }
-        let status: String = if self.busy() {
-            tr("Connecting…").into()
-        } else if !self.error.is_empty() {
-            self.error.clone()
-        } else {
-            tr("Reconnect").into()
-        };
+        // label of the connect button; the last error is shown separately
+        let status: &str = if self.busy() { tr("Connecting…") } else { tr("Connect") };
         let (batts, batt_title) = self.batteries();
         sync(&self.m.batteries, if ready { batts } else { vec![] });
 
@@ -1175,9 +1221,10 @@ impl State {
 
         // about
         let address = sel_info.as_ref().map(|s| s.0.replace('-', ":").to_uppercase()).unwrap_or_default();
+        let product = model.map(|m| if m.code == catalog::GENERIC.code { tr("Nothing device").to_string() } else { m.full_name() }).unwrap_or_default();
         let info = vec![
-            InfoRow { k: tr("Name").into(), v: shown_name.clone().into() },
-            InfoRow { k: tr("Model").into(), v: model.map(|m| format!("{}{}", m.code, if m.verified { tr(" · tested") } else { tr(" · experimental") })).unwrap_or_default().into() },
+            InfoRow { k: tr("Name").into(), v: sel_info.as_ref().map(|s| s.1.clone()).unwrap_or_default().into() },
+            InfoRow { k: tr("Model").into(), v: product.into() },
             InfoRow { k: tr("Firmware").into(), v: self.firmware.clone().into() },
             InfoRow { k: tr("Serial number").into(), v: self.serial.clone().into() },
             InfoRow { k: tr("Bluetooth address").into(), v: address.into() },
@@ -1197,7 +1244,8 @@ impl State {
         ui.set_connected(ready);
         ui.set_busy(self.busy());
         ui.set_bt_denied(self.bt_denied);
-        ui.set_status(status.clone().into());
+        ui.set_status(status.into());
+        ui.set_error(self.error.clone().into());
         ui.set_device_name(shown_name.clone().into());
         ui.set_firmware(self.firmware.clone().into());
         ui.set_has_anc(nc.is_some());
@@ -1245,6 +1293,7 @@ impl State {
             p.set_busy(self.busy());
             p.set_has_device(sel_idx >= 0);
             p.set_status(status.into());
+            p.set_error(self.error.clone().into());
             p.set_has_anc(nc.is_some());
             p.set_has_transparency(nc.map_or(false, |n| n.transparency.is_some()));
             p.set_anc_mode(anc_mode);
@@ -1333,7 +1382,7 @@ fn main() {
         let mut nothing = vec![];
         let mut cmf = vec![];
         for m in catalog::MODELS {
-            let item = ModelItem { name: m.name.into(), code: m.code.into(), img: s.img(m, 300), verified: m.verified, cmf: m.is_cmf(), kind: m.kind as i32 };
+            let item = ModelItem { name: m.name.into(), img: s.img(m, 300), cmf: m.is_cmf(), pair: m.pairing() as i32 };
             if item.cmf { cmf.push(item) } else { nothing.push(item) }
         }
         ui.set_models_nothing(ModelRc::new(VecModel::from(nothing)));
@@ -1393,6 +1442,10 @@ fn main() {
     hook!(ui.on_fit_test, |s| { s.fit_test(); });
     hook!(ui.on_open_gesture, |s, i| {
         s.gesture_open = Some(i as usize);
+        s.dirty = true;
+    });
+    hook!(ui.on_close_gesture, |s| {
+        s.gesture_open = None;
         s.dirty = true;
     });
     hook!(ui.on_set_gesture, |s, i, code| { s.set_gesture(i as usize, code as u8); });
